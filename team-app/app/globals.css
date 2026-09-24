@@ -1,26 +1,75 @@
 @import "tailwindcss";
 
+/*
+ * Paws & Paths design tokens. The only custom CSS allowed in the project (Constitution III).
+ * Components use the Tailwind utilities these generate (bg-primary, text-muted, border-border, ...).
+ * Never hard-code colors in components. Add a token here instead.
+ *
+ * Contrast (WCAG AA): every foreground/background pair below is at least 4.5:1 in both themes.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  --background: #fbfaf7;
+  --surface: #ffffff;
+  --surface-muted: #f1efe8;
+  --foreground: #1c2421;
+  --muted: #56615c;
+  --border: #dcd8cc;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --primary: #2f6b4f;
+  --primary-hover: #25573f;
+  --primary-foreground: #ffffff;
+  --primary-soft: #e3efe8;
+
+  --accent: #a35208;
+  --accent-soft: #fdf1dc;
+
+  --danger: #b42318;
+  --danger-soft: #fdecea;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #121614;
+    --surface: #1a201d;
+    --surface-muted: #232a26;
+    --foreground: #ecefe9;
+    --muted: #a7b1ab;
+    --border: #36413b;
+
+    --primary: #6fbf93;
+    --primary-hover: #8acfa8;
+    --primary-foreground: #0d1a13;
+    --primary-soft: #1e3328;
+
+    --accent: #f2b35a;
+    --accent-soft: #3a2b14;
+
+    --danger: #f59e8f;
+    --danger-soft: #3b1c18;
   }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }
