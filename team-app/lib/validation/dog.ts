@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { DOG_SIZES } from "@/lib/types";
-import { httpsUrlSchema, optionalText } from "./common";
+import { clearableText, httpsUrlSchema, optionalText } from "./common";
 
 const birthDateSchema = z.iso
   .date({ error: "Enter a valid date" })
@@ -9,7 +9,7 @@ const birthDateSchema = z.iso
   });
 
 // FR-011
-export const dogCreateSchema = z.object({
+export const dogCreateSchema = z.strictObject({
   name: z
     .string()
     .trim()
@@ -24,5 +24,14 @@ export const dogCreateSchema = z.object({
 });
 export type DogCreateInput = z.infer<typeof dogCreateSchema>;
 
-export const dogUpdateSchema = dogCreateSchema.partial();
+// PATCH /api/dogs/[id]: optional text fields can be cleared with "" or null.
+export const dogUpdateSchema = dogCreateSchema
+  .extend({
+    breed: clearableText(60),
+    notes: clearableText(1000),
+    birthDate: birthDateSchema.nullable(),
+    weightKg: z.number().min(0.5).max(120).nullable(),
+    photoUrl: httpsUrlSchema.nullable(),
+  })
+  .partial();
 export type DogUpdateInput = z.infer<typeof dogUpdateSchema>;

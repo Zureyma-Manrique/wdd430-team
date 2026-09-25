@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { SelectField, TextAreaField, TextField } from "@/components/ui/form-field";
@@ -57,6 +57,19 @@ export function BookingForm({ walkerId, walkerName, dogs }: BookingFormProps) {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [stage, setStage] = useState<Stage>({ kind: "editing" });
   const [isSending, setIsSending] = useState(false);
+
+  // WCAG 2.4.3: each step swap unmounts the focused button, so move focus to the new content.
+  const reviewHeadingRef = useRef<HTMLHeadingElement>(null);
+  const statusRef = useRef<HTMLParagraphElement>(null);
+  const dogSelectRef = useRef<HTMLSelectElement>(null);
+  const previousStage = useRef<Stage["kind"]>("editing");
+
+  useEffect(() => {
+    if (stage.kind === "reviewing") reviewHeadingRef.current?.focus();
+    else if (stage.kind === "sent") statusRef.current?.focus();
+    else if (previousStage.current === "reviewing") dogSelectRef.current?.focus();
+    previousStage.current = stage.kind;
+  }, [stage.kind]);
 
   function update<K extends keyof FormValues>(key: K, value: FormValues[K]) {
     setValues((current) => ({ ...current, [key]: value }));
@@ -132,7 +145,12 @@ export function BookingForm({ walkerId, walkerName, dogs }: BookingFormProps) {
     const when = new Date(request.startAt).toLocaleString(undefined, { dateStyle: "full", timeStyle: "short" });
     return (
       <section aria-labelledby="booking-review-heading" className="flex flex-col gap-4">
-        <h3 id="booking-review-heading" className="text-base font-semibold text-foreground">
+        <h3
+          ref={reviewHeadingRef}
+          tabIndex={-1}
+          id="booking-review-heading"
+          className="text-base font-semibold text-foreground focus:outline-none"
+        >
           Review your request
         </h3>
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
@@ -173,6 +191,8 @@ export function BookingForm({ walkerId, walkerName, dogs }: BookingFormProps) {
     <form onSubmit={handleReview} noValidate className="flex flex-col gap-4">
       {stage.kind === "sent" ? (
         <p
+          ref={statusRef}
+          tabIndex={-1}
           role={stage.tone === "error" ? "alert" : "status"}
           className={
             "rounded-lg px-3 py-2 text-sm " +
@@ -184,6 +204,7 @@ export function BookingForm({ walkerId, walkerName, dogs }: BookingFormProps) {
       ) : null}
 
       <SelectField
+        ref={dogSelectRef}
         id="booking-dog"
         label="Dog"
         value={values.dogId}

@@ -13,14 +13,14 @@ export const passwordSchema = z
   .min(8, { error: "Password must be at least 8 characters" })
   .max(128, { error: "Password must be 128 characters or fewer" });
 
-export const signInSchema = z.object({
+export const signInSchema = z.strictObject({
   email: emailSchema,
   // Sign-in only checks presence; strength rules apply at sign-up.
   password: z.string().min(1, { error: "Enter your password" }).max(128),
 });
 export type SignInInput = z.infer<typeof signInSchema>;
 
-export const signUpSchema = z.object({
+export const signUpSchema = z.strictObject({
   name: z.string().trim().min(1, { error: "Enter your name" }).max(80),
   email: emailSchema,
   password: passwordSchema,

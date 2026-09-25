@@ -36,7 +36,7 @@ app/                         Routes (App Router). Server Components by default.
   walkers/[id]/              Public walker profile & booking
   api/<resource>/route.ts    Route Handlers: all CRUD and server-side filtering
 components/
-  ui/                        Primitives: button.tsx, form-field.tsx
+  ui/                        Primitives: button.tsx, form-field.tsx, styles.ts (focusRing, textLinkClasses)
   layout/                    header.tsx, footer.tsx, nav-links.tsx (client), nav-items.ts
   walkers/                   walker-card, rating-badge, filter-bar (client), booking-form (client)
   dogs/                      dog-profile-card
@@ -108,7 +108,8 @@ arbitrary color values in components.** If you need a new color, add a token.
   Controls use `rounded-lg`.
 - **Mobile first:** base styles target 360px. Add `sm:`, `md:`, `lg:` upward.
 - **Accessibility (WCAG 2.1 AA):** every text pair ≥ 4.5:1. Interactive targets `min-h-11` (44px).
-  Visible focus with `focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary`.
+  Visible focus via the shared `focusRing` constant (`components/ui/styles.ts`); never re-type the classes.
+  When a multi-step UI swaps content, move focus to the new heading or status (see `booking-form.tsx`).
   Status is never shown by color alone (badges contain text). Forms use `TextField`/`SelectField`/
   `TextAreaField`, which wire up `label`, `aria-invalid`, and `aria-describedby`. Emoji decoration is `aria-hidden`.
 - Reuse `Button`/`ButtonLink`/`buttonClasses` rather than restyling buttons. Build one shared `WalkStatusBadge` for walk statuses.
@@ -121,6 +122,7 @@ arbitrary color values in components.** If you need a new color, add a token.
 2. **Validate every trust boundary with Zod**: route `params`, `searchParams`, request bodies,
    and form input. Use `safeParse` and return `400` (API) or `notFound()` / defaults (pages).
    Use `z.strictObject` for mutation bodies so unexpected fields such as `ownerId` or `status` are rejected.
+   In PATCH schemas use `clearableText()` (not `optionalText()`) so `""`/`null` can clear a field.
 3. **AuthN/AuthZ on the server, every time.** In each Route Handler, run these checks in order: `getSession()` → `401`,
    role → `403`, validate → `400`, ownership → `404` (never reveal that another user's resource exists, FR-004).
    Take the acting user's id **only** from the session, never from the body, query, or URL.
@@ -130,7 +132,7 @@ arbitrary color values in components.** If you need a new color, add a token.
 5. **Injection:** Prisma query objects or `$queryRaw` tagged templates only. Never
    `$queryRawUnsafe` or string-built SQL. No `eval` or `new Function`.
 6. **Redirects:** post-login targets go through `callbackUrlSchema` (same-origin paths only).
-7. **CSRF:** JSON mutations go through `readJsonBody()` (requires `application/json` and a same-host `Origin`, and caps body size).
+7. **CSRF / DoS:** JSON mutations go through `readJsonBody()` (requires `application/json` and a same-host `Origin`, and caps body size while streaming, so the body is never fully buffered). Never call `request.json()`/`request.text()` directly.
 8. **Errors:** never send stack traces, SQL, or `error.message` from caught exceptions to clients.
    Auth failures use the generic "Invalid email or password".
 9. Security headers are set in `next.config.ts`. Don't weaken them without team review.

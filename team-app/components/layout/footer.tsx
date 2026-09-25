@@ -1,5 +1,8 @@
 import Link from "next/link";
+import { focusRing } from "@/components/ui/styles";
 import { PRIMARY_NAV } from "./nav-items";
+
+const footerLinkClasses = `inline-flex min-h-11 items-center rounded text-sm text-muted underline-offset-4 hover:text-foreground hover:underline ${focusRing}`;
 
 export function Footer() {
   return (
@@ -18,7 +21,7 @@ export function Footer() {
               <li key={href}>
                 <Link
                   href={href}
-                  className="inline-flex min-h-11 items-center rounded text-sm text-muted underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  className={footerLinkClasses}
                 >
                   {label}
                 </Link>
@@ -27,7 +30,7 @@ export function Footer() {
             <li>
               <Link
                 href="/sign-in"
-                className="inline-flex min-h-11 items-center rounded text-sm text-muted underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                className={footerLinkClasses}
               >
                 Sign in
               </Link>

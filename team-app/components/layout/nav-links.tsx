@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { focusRing } from "@/components/ui/styles";
 import { PRIMARY_NAV } from "./nav-items";
 
 function isActive(pathname: string, href: string): boolean {
@@ -23,7 +24,7 @@ export function NavLinks() {
               aria-current={active ? "page" : undefined}
               className={
                 "inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium transition-colors " +
-                "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary " +
+                `${focusRing} ` +
                 (active ? "bg-primary-soft text-primary" : "text-muted hover:bg-surface-muted hover:text-foreground")
               }
             >

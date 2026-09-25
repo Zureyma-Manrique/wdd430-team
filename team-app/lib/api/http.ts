@@ -23,6 +23,29 @@ function isSameHost(origin: string, requestUrl: string): boolean {
   }
 }
 
+function tooLarge(): JsonBodyResult {
+  return { ok: false, response: apiError(413, "PAYLOAD_TOO_LARGE", "Request body is too large") };
+}
+
+/** Reads the body as UTF-8, stopping (and returning `null`) as soon as it exceeds `limit` bytes. */
+async function readTextWithLimit(request: Request, limit: number): Promise<string | null> {
+  if (!request.body) return "";
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > limit) {
+      await reader.cancel();
+      return null;
+    }
+    chunks.push(value);
+  }
+  return Buffer.concat(chunks).toString("utf8");
+}
+
 type JsonBodyResult = { ok: true; body: unknown } | { ok: false; response: Response };
 
 /**
@@ -44,9 +67,13 @@ export async function readJsonBody(request: Request): Promise<JsonBodyResult> {
     return { ok: false, response: apiError(403, "FORBIDDEN", "Cross-origin request rejected") };
   }
 
-  const text = await request.text();
-  if (new TextEncoder().encode(text).byteLength > MAX_JSON_BODY_BYTES) {
-    return { ok: false, response: apiError(413, "PAYLOAD_TOO_LARGE", "Request body is too large") };
+  // Reject on the declared length first, then enforce while streaming (chunked bodies have no length).
+  if (Number(request.headers.get("content-length") ?? 0) > MAX_JSON_BODY_BYTES) {
+    return tooLarge();
+  }
+  const text = await readTextWithLimit(request, MAX_JSON_BODY_BYTES);
+  if (text === null) {
+    return tooLarge();
   }
 
   try {

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getSession } from "@/lib/auth/session";
 import { ButtonLink } from "@/components/ui/button";
+import { focusRing } from "@/components/ui/styles";
 import { NavLinks } from "./nav-links";
 
 export async function Header() {
@@ -11,7 +12,7 @@ export async function Header() {
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-3 sm:px-6 lg:px-8">
         <Link
           href="/"
-          className="flex min-h-11 items-center gap-2 rounded-lg text-lg font-bold tracking-tight text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          className={`flex min-h-11 items-center gap-2 rounded-lg text-lg font-bold tracking-tight text-foreground ${focusRing}`}
         >
           <span aria-hidden="true" className="grid size-8 place-items-center rounded-full bg-primary text-primary-foreground">
             🐾

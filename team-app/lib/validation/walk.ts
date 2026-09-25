@@ -5,7 +5,7 @@ import {
   WALK_STATUS_ACTIONS,
   type WalkDurationMinutes,
 } from "@/lib/types";
-import { entityIdSchema, optionalText } from "./common";
+import { clearableText, entityIdSchema, optionalText, paginationSchema } from "./common";
 
 const HOUR_MS = 60 * 60 * 1000;
 export const MIN_BOOKING_LEAD_MS = HOUR_MS;
@@ -47,7 +47,7 @@ export const walkUpdateSchema = z
   .strictObject({
     startAt: walkStartAtSchema,
     durationMinutes: durationMinutesSchema,
-    pickupNotes: optionalText(500),
+    pickupNotes: clearableText(500),
   })
   .partial();
 export type WalkUpdateInput = z.infer<typeof walkUpdateSchema>;
@@ -76,7 +76,7 @@ const timeZoneSchema = z
   );
 
 // GET /api/walks query string (FR-025)
-export const walkListQuerySchema = z.object({
+export const walkListQuerySchema = paginationSchema.extend({
   from: z.iso.date().optional(),
   to: z.iso.date().optional(),
   tz: timeZoneSchema.default("UTC"),
@@ -87,7 +87,6 @@ export const walkListQuerySchema = z.object({
     .transform((value) => (value ? value.split(",") : undefined))
     .pipe(z.array(z.enum(WALK_BOOKING_STATUSES)).optional()),
   dogId: entityIdSchema.optional(),
-  page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(50).default(20),
 });
 export type WalkListQuery = z.infer<typeof walkListQuerySchema>;

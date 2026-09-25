@@ -85,7 +85,6 @@ export function FilterBar({ initial }: FilterBarProps) {
         name="minRating"
         label="Minimum rating"
         defaultValue={initial.minRating}
-        onChange={(event) => event.currentTarget.form?.requestSubmit()}
       >
         <option value="">Any rating</option>
         {MIN_RATING_OPTIONS.map((rating) => (
@@ -100,7 +99,6 @@ export function FilterBar({ initial }: FilterBarProps) {
         name="sort"
         label="Sort by"
         defaultValue={initial.sort}
-        onChange={(event) => event.currentTarget.form?.requestSubmit()}
       >
         <option value="rating">Rating: high to low</option>
         <option value="price">Price: low to high</option>

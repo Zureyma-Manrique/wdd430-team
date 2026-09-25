@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cache } from "react";
 import { z } from "zod";
 import { ButtonLink, buttonClasses } from "@/components/ui/button";
+import { textLinkClasses } from "@/components/ui/styles";
 import { BookingForm } from "@/components/walkers/booking-form";
 import { RatingBadge } from "@/components/walkers/rating-badge";
 import { WalkerAvatar } from "@/components/walkers/walker-avatar";
@@ -19,10 +21,13 @@ const reviewPageSchema = z.object({
   reviewPage: z.coerce.number().int().min(1).max(5).catch(1),
 });
 
+/** Memoized per request, so generateMetadata and the page share one lookup. */
+const getWalkerCached = cache(getWalkerById);
+
 async function loadWalker(params: Promise<{ id: string }>) {
   const parsed = idParamsSchema.safeParse(await params);
   if (!parsed.success) notFound();
-  const walker = await getWalkerById(parsed.data.id);
+  const walker = await getWalkerCached(parsed.data.id);
   if (!walker) notFound();
   return walker;
 }
@@ -50,7 +55,7 @@ export default async function WalkerProfilePage({ params, searchParams }: PagePr
       <div className="flex flex-col gap-8">
         <Link
           href="/walkers"
-          className="w-fit rounded text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          className={`w-fit ${textLinkClasses}`}
         >
           ← All walkers
         </Link>

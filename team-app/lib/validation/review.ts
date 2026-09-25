@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { entityIdSchema, optionalText } from "./common";
+import { clearableText, entityIdSchema, optionalText, paginationSchema } from "./common";
 
 export const ratingSchema = z
   .number()
@@ -19,7 +19,7 @@ export type ReviewCreateInput = z.infer<typeof reviewCreateSchema>;
 export const reviewUpdateSchema = z
   .strictObject({
     rating: ratingSchema,
-    comment: optionalText(1000),
+    comment: clearableText(1000),
   })
   .partial();
 export type ReviewUpdateInput = z.infer<typeof reviewUpdateSchema>;
@@ -31,9 +31,5 @@ export const reviewReplySchema = z.strictObject({
 export type ReviewReplyInput = z.infer<typeof reviewReplySchema>;
 
 // GET /api/reviews (FR-034)
-export const reviewListQuerySchema = z.object({
-  walkerId: entityIdSchema,
-  page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(50).default(10),
-});
+export const reviewListQuerySchema = paginationSchema.extend({ walkerId: entityIdSchema });
 export type ReviewListQuery = z.infer<typeof reviewListQuerySchema>;
