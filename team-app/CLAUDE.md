@@ -33,12 +33,13 @@ app/                         Routes (App Router). Server Components by default.
   (auth)/sign-in/            Sign-in page (/login redirects here via next.config.ts)
   (auth)/sign-up/            Sign-up page with Owner/Walker role choice (story A1)
   dashboard/                 Protected role dashboard
-  profile/                   Walker profile editor (story A3); owners see a placeholder
+  profile/                   Profile editor for walkers and owners (story A3)
   walkers/(directory)/       Walker directory + its loading.tsx (route group, see note below)
   walkers/[id]/              Public walker profile & booking
   api/<resource>/route.ts    Route Handlers: all CRUD and server-side filtering
   api/auth/[...nextauth]/    Auth.js endpoints; api/auth/register/ creates credentials accounts
   api/walkers/me/            GET/PATCH my walker profile; api/walkers/[id]/ is the public profile
+  api/owners/me/             GET/PATCH my owner profile (name, phone, postal code)
 proxy.ts                     Redirects signed-out visitors on /dashboard, /dogs, /walks, /profile to /sign-in
 components/
   ui/                        Primitives: button.tsx, form-field.tsx, styles.ts (focusRing, textLinkClasses)
@@ -46,7 +47,7 @@ components/
   walkers/                   walker-card, rating-badge, filter-bar (client), booking-form (client)
   dogs/                      dog-profile-card
   auth/                      sign-in-form, sign-up-form (client)
-  profile/                   walker-profile-form (client)
+  profile/                   walker-profile-form, owner-profile-form (client)
 lib/
   types/index.ts             Domain types + enum tuples (USER_ROLES, DOG_SIZES, WALK_BOOKING_STATUSES)
   validation/*.ts            Zod schemas shared by Route Handlers and client forms

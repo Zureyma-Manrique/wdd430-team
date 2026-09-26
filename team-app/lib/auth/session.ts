@@ -1,5 +1,6 @@
 import "server-only";
 import type { SessionUser } from "@/lib/types";
+import { findUserById } from "@/lib/data/users";
 import { auth } from "./auth";
 
 /**
@@ -11,8 +12,14 @@ import { auth } from "./auth";
 export async function getSession(): Promise<SessionUser | null> {
   const session = await auth();
   if (session?.user?.id && session.user.role && session.user.profileId) {
-    const { id, name, role, profileId } = session.user;
-    return { id, name: name ?? "", role, profileId };
+    // Read the account on every request: the name can change after sign-in (story A3), and a
+    // token for an account that no longer exists must not count as signed in.
+    const account = await findUserById(session.user.id);
+    if (!account) {
+      return null;
+    }
+    const { role, profileId } = session.user;
+    return { id: account.id, name: account.name, role, profileId };
   }
 
   // Development-only preview of signed-in views without an account. The NODE_ENV guard means

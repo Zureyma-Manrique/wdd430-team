@@ -55,9 +55,14 @@ export default async function DashboardPage() {
             <h2 id="dogs-heading" className="text-xl font-semibold text-foreground">
               Your dogs
             </h2>
-            <ButtonLink href="/walkers" variant="secondary">
-              Book a walk
-            </ButtonLink>
+            <div className="flex flex-wrap gap-2">
+              <ButtonLink href="/profile" variant="ghost">
+                Edit profile
+              </ButtonLink>
+              <ButtonLink href="/walkers" variant="secondary">
+                Book a walk
+              </ButtonLink>
+            </div>
           </div>
           {dogs.length > 0 ? (
             <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

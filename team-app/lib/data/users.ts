@@ -1,5 +1,6 @@
 import "server-only";
 import type { User, UserRole } from "@/lib/types";
+import { createOwnerProfile } from "./owners";
 import { createWalkerProfile } from "./walkers";
 
 /*
@@ -56,6 +57,23 @@ export async function findUserByEmail(email: string): Promise<UserAccount | null
   return accountsByEmail.get(email) ?? null;
 }
 
+export async function findUserById(id: string): Promise<UserAccount | null> {
+  for (const account of accountsByEmail.values()) {
+    if (account.id === id) return account;
+  }
+  return null;
+}
+
+/** Renames the account (story A3). `name` must already be validated. Returns `null` if the user doesn't exist. */
+export async function updateUserName(id: string, name: string): Promise<UserAccount | null> {
+  const account = await findUserById(id);
+  if (!account) return null;
+
+  const updated: UserAccount = { ...account, name, updatedAt: new Date().toISOString() };
+  accountsByEmail.set(updated.email, updated);
+  return updated;
+}
+
 export interface NewUserAccount {
   email: string;
   name: string;
@@ -68,7 +86,6 @@ export type CreateUserResult = { ok: true; user: UserAccount } | { ok: false; re
 /**
  * Creates the user and its empty role profile (FR-002). A new walker profile has no rate or
  * service area, so it stays out of search until the walker completes it at /profile (FR-041).
- * TODO(feature/data-model): create the PetOwner row for owners too.
  */
 export async function createUser(input: NewUserAccount): Promise<CreateUserResult> {
   if (accountsByEmail.has(input.email)) {
@@ -87,6 +104,8 @@ export async function createUser(input: NewUserAccount): Promise<CreateUserResul
   accountsByEmail.set(user.email, user);
   if (user.role === "WALKER") {
     await createWalkerProfile({ id: user.profileId, userId: user.id, displayName: user.name });
+  } else {
+    await createOwnerProfile({ id: user.profileId, userId: user.id });
   }
   return { ok: true, user };
 }

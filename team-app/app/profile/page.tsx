@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { OwnerProfileForm } from "@/components/profile/owner-profile-form";
 import { WalkerProfileForm } from "@/components/profile/walker-profile-form";
 import { textLinkClasses } from "@/components/ui/styles";
 import { getSession } from "@/lib/auth/session";
+import { getOwnOwnerProfile } from "@/lib/data/owners";
 import { getOwnWalkerProfile, getWalkerById } from "@/lib/data/walkers";
 
 export const metadata: Metadata = {
@@ -17,14 +19,22 @@ export default async function ProfilePage() {
     redirect(`/sign-in?callbackUrl=${encodeURIComponent("/profile")}`);
   }
 
-  if (session.role !== "WALKER") {
+  if (session.role === "OWNER") {
+    const owner = await getOwnOwnerProfile(session.profileId);
+    if (!owner) {
+      redirect("/dashboard");
+    }
     return (
-      <div className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-10 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Your profile</h1>
-        <p className="text-muted">
-          Owner profile editing (phone and neighborhood) arrives with the database. For now, your
-          account name is {session.name}.
-        </p>
+      <div className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-10 sm:px-6 lg:px-8">
+        <header className="flex flex-col gap-2">
+          <p className="text-sm font-semibold uppercase tracking-wide text-primary">Owner profile</p>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">{session.name}</h1>
+          <p className="text-muted">Keep your contact details current so walkers can reach you.</p>
+        </header>
+
+        <div className="rounded-xl border border-border bg-surface p-6 shadow-sm">
+          <OwnerProfileForm owner={{ name: session.name, phone: owner.phone, postalCode: owner.postalCode }} />
+        </div>
       </div>
     );
   }

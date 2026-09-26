@@ -1,5 +1,5 @@
 import "server-only";
-import type { DogProfile, PublicWalkerReview, Walker } from "@/lib/types";
+import type { DogProfile, PetOwner, PublicWalkerReview, Walker } from "@/lib/types";
 
 /**
  * In-memory seed data used until Prisma + Postgres land (feature/data-model).
@@ -199,4 +199,11 @@ export const seedDogs: readonly DogProfile[] = [
     photoUrl: null,
     archivedAt: null,
   },
+];
+
+export const seedOwners: readonly PetOwner[] = [
+  // Jordan, the demo owner account (jordan@example.com).
+  { id: "o_demo01", userId: "u_demo_owner", phone: "801-555-0142", postalCode: "84604" },
+  // Otis's owner. No account yet; only here so ownership checks have someone else's data.
+  { id: "o_other", userId: "u_other", phone: null, postalCode: null },
 ];
