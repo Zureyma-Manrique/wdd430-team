@@ -4,3 +4,4 @@ export * from "./dog";
 export * from "./walk";
 export * from "./review";
 export * from "./walker";
+export * from "./owner";
