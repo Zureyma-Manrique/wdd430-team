@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SignInForm } from "@/components/auth/sign-in-form";
+import { textLinkClasses } from "@/components/ui/styles";
 import { getSession } from "@/lib/auth/session";
 import { callbackUrlSchema } from "@/lib/validation";
 
@@ -29,7 +31,10 @@ export default async function SignInPage({ searchParams }: PageProps<"/sign-in">
       </div>
 
       <p className="text-center text-sm text-muted">
-        New to Paws &amp; Paths? Account sign-up opens with the authentication release.
+        New to Paws &amp; Paths?{" "}
+        <Link href="/sign-up" className={textLinkClasses}>
+          Create an account
+        </Link>
       </p>
     </div>
   );

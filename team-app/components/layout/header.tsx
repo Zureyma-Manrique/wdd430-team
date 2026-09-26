@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getSession } from "@/lib/auth/session";
-import { ButtonLink } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button";
+import { signOutAction } from "@/lib/auth/actions";
 import { focusRing } from "@/components/ui/styles";
 import { NavLinks } from "./nav-links";
 
@@ -25,13 +26,25 @@ export async function Header() {
         </nav>
 
         {session ? (
-          <p className="text-sm text-muted">
-            Signed in as <span className="font-semibold text-foreground">{session.name}</span>
-          </p>
+          <div className="flex items-center gap-3">
+            <p className="text-sm text-muted">
+              Signed in as <span className="font-semibold text-foreground">{session.name}</span>
+            </p>
+            <form action={signOutAction}>
+              <Button type="submit" variant="secondary">
+                Sign out
+              </Button>
+            </form>
+          </div>
         ) : (
-          <ButtonLink href="/sign-in" variant="primary">
-            Sign in
-          </ButtonLink>
+          <div className="flex items-center gap-2">
+            <ButtonLink href="/sign-up" variant="ghost">
+              Sign up
+            </ButtonLink>
+            <ButtonLink href="/sign-in" variant="primary">
+              Sign in
+            </ButtonLink>
+          </div>
         )}
       </div>
     </header>
