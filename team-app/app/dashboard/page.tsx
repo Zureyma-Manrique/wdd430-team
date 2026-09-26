@@ -41,9 +41,11 @@ export default async function DashboardPage() {
             Complete your walker profile
           </h2>
           <p className="mt-2 text-muted">
-            Add your hourly rate and the postal codes you serve so owners can find you in search. Profile
-            editing arrives with story A3.
+            Add your hourly rate and the postal codes you serve so owners can find you in search.
           </p>
+          <ButtonLink href="/profile" className="mt-4">
+            Complete profile
+          </ButtonLink>
         </section>
       ) : null}
 
@@ -71,9 +73,16 @@ export default async function DashboardPage() {
         </section>
       ) : (
         <section aria-labelledby="requests-heading" className="rounded-xl border border-dashed border-border bg-surface p-6">
-          <h2 id="requests-heading" className="text-xl font-semibold text-foreground">
-            Walk requests
-          </h2>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 id="requests-heading" className="text-xl font-semibold text-foreground">
+              Walk requests
+            </h2>
+            {walkerProfileIncomplete ? null : (
+              <ButtonLink href="/profile" variant="secondary">
+                Edit profile
+              </ButtonLink>
+            )}
+          </div>
           <p className="mt-2 text-muted">
             Incoming requests and today&apos;s walks will appear here once scheduling ships (feature/schedule-api).
           </p>

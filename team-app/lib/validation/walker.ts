@@ -21,12 +21,17 @@ export type WalkerSearchParams = z.infer<typeof walkerSearchParamsSchema>;
 export const walkerProfileUpdateSchema = z
   .strictObject({
     bio: clearableText(500),
-    serviceAreaPostalCodes: z.array(postalCodeSchema).min(1).max(10),
+    serviceAreaPostalCodes: z
+      .array(postalCodeSchema)
+      .min(1, { error: "Add at least one postal code" })
+      .max(10, { error: "Add at most 10 postal codes" }),
     hourlyRate: z
-      .number()
+      .number({ error: "Enter an hourly rate" })
+      .int({ error: "Use whole dollars" })
       .min(5, { error: "Rate must be at least $5" })
       .max(200, { error: "Rate must be $200 or less" }),
-    photoUrl: httpsUrlSchema,
+    // `null` removes the photo.
+    photoUrl: httpsUrlSchema.nullable(),
     isActive: z.boolean(),
   })
   .partial();
