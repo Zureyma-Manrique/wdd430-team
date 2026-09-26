@@ -1,5 +1,6 @@
 import "server-only";
 import type { User, UserRole } from "@/lib/types";
+import { createWalkerProfile } from "./walkers";
 
 /*
  * Account storage for Auth.js credentials sign-in (stories A1, A2).
@@ -66,7 +67,8 @@ export type CreateUserResult = { ok: true; user: UserAccount } | { ok: false; re
 
 /**
  * Creates the user and its empty role profile (FR-002). A new walker profile has no rate or
- * service area, so it stays out of search until story A3 completes it (FR-041).
+ * service area, so it stays out of search until the walker completes it at /profile (FR-041).
+ * TODO(feature/data-model): create the PetOwner row for owners too.
  */
 export async function createUser(input: NewUserAccount): Promise<CreateUserResult> {
   if (accountsByEmail.has(input.email)) {
@@ -83,5 +85,8 @@ export async function createUser(input: NewUserAccount): Promise<CreateUserResul
     updatedAt: now,
   };
   accountsByEmail.set(user.email, user);
+  if (user.role === "WALKER") {
+    await createWalkerProfile({ id: user.profileId, userId: user.id, displayName: user.name });
+  }
   return { ok: true, user };
 }

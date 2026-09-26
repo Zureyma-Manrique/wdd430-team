@@ -5,7 +5,7 @@ import { authConfig } from "@/lib/auth/config";
 const { auth } = NextAuth(authConfig);
 
 /**
- * Sends signed-out visitors on protected pages to sign-in and back again afterwards
+ * Sends signed-out visitors on protected pages (/dashboard, /dogs, /walks, /profile) to sign-in and back again afterwards
  * (story A1, scenario 5). Pages and Route Handlers still check the session themselves;
  * this is the first layer, not the only one.
  */
@@ -25,5 +25,5 @@ export const proxy = auth((request) => {
 });
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/dogs/:path*", "/walks/:path*"],
+  matcher: ["/dashboard/:path*", "/dogs/:path*", "/walks/:path*", "/profile/:path*"],
 };
