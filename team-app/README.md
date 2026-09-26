@@ -2,7 +2,14 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+First, create `.env.local` with an Auth.js secret (sign-in won't work without it):
+
+```bash
+cp .env.example .env.local
+npx auth secret   # or paste the output of `openssl rand -base64 32` into AUTH_SECRET
+```
+
+Then run the development server:
 
 ```bash
 npm run dev
@@ -15,6 +22,15 @@ bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+### Demo accounts
+
+Until the database lands, accounts live in memory: anything created at `/sign-up` is lost when the server restarts. These two demo accounts are always available and are linked to the seed data:
+
+| Role | Email | Password |
+|---|---|---|
+| Owner | `jordan@example.com` | `paws-demo-2026` |
+| Walker | `sam@example.com` | `paws-demo-2026` |
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 

@@ -1,16 +1,22 @@
 import "server-only";
 import type { SessionUser } from "@/lib/types";
+import { auth } from "./auth";
 
 /**
  * Returns the signed-in user, or `null` when there is no session.
  *
- * TODO(feature/auth): replace the body with Auth.js v5 `auth()` (spec §5). Keep this
- * signature so callers don't change. Every page and Route Handler that exposes private
- * data MUST call this and handle `null` (deny by default).
+ * Every page and Route Handler that exposes private data MUST call this and handle `null`
+ * (deny by default), even though `proxy.ts` also guards the protected pages.
  */
 export async function getSession(): Promise<SessionUser | null> {
-  // Development-only preview of signed-in views. The NODE_ENV guard means a production
-  // build can never create a fake session, even if the variable leaks into its env.
+  const session = await auth();
+  if (session?.user?.id && session.user.role && session.user.profileId) {
+    const { id, name, role, profileId } = session.user;
+    return { id, name: name ?? "", role, profileId };
+  }
+
+  // Development-only preview of signed-in views without an account. The NODE_ENV guard means
+  // a production build can never create a fake session, even if the variable leaks into its env.
   if (process.env.NODE_ENV === "development") {
     const role = process.env.DEV_MOCK_SESSION_ROLE;
     if (role === "OWNER") {

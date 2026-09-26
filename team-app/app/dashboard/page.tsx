@@ -4,6 +4,7 @@ import { DogProfileCard } from "@/components/dogs/dog-profile-card";
 import { ButtonLink } from "@/components/ui/button";
 import { getSession } from "@/lib/auth/session";
 import { getDogsForOwner } from "@/lib/data/dogs";
+import { getWalkerById } from "@/lib/data/walkers";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -18,6 +19,9 @@ export default async function DashboardPage() {
 
   // Data is always scoped to the session's own profile id, never an id from the URL.
   const dogs = session.role === "OWNER" ? await getDogsForOwner(session.profileId) : [];
+  // `getWalkerById` only returns searchable walkers, so `null` means the profile still needs a
+  // rate and service area before the walker shows up in search (story A1, scenario 2).
+  const walkerProfileIncomplete = session.role === "WALKER" && (await getWalkerById(session.profileId)) === null;
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-10 sm:px-6 lg:px-8">
@@ -27,6 +31,21 @@ export default async function DashboardPage() {
         </p>
         <h1 className="text-3xl font-bold tracking-tight text-foreground">Hi, {session.name}</h1>
       </header>
+
+      {walkerProfileIncomplete ? (
+        <section
+          aria-labelledby="complete-profile-heading"
+          className="rounded-xl border border-accent bg-accent-soft p-6"
+        >
+          <h2 id="complete-profile-heading" className="text-xl font-semibold text-foreground">
+            Complete your walker profile
+          </h2>
+          <p className="mt-2 text-muted">
+            Add your hourly rate and the postal codes you serve so owners can find you in search. Profile
+            editing arrives with story A3.
+          </p>
+        </section>
+      ) : null}
 
       {session.role === "OWNER" ? (
         <section aria-labelledby="dogs-heading" className="flex flex-col gap-4">
