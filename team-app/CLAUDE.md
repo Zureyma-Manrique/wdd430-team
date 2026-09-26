@@ -21,7 +21,7 @@ Cite requirement IDs (for example `FR-023` or story `C2`) in comments where code
 | Styling | Tailwind CSS v4 utilities only. Tokens live in `app/globals.css` (`@theme inline`). |
 | Validation | Zod 4 (`z.email()`, `z.iso.datetime()`, `{ error: "..." }`, `z.flattenError`). |
 | Data (planned) | PostgreSQL 16 + Prisma. Until then: in-memory seed data in `lib/data/seed.ts`. |
-| Auth (planned) | Auth.js v5 (Prisma adapter, Credentials + Google). Until then: `lib/auth/session.ts` stub. |
+| Auth | Auth.js v5 (`next-auth@beta`) with a Credentials provider and bcrypt (`bcryptjs`) password hashes. JWT sessions and an in-memory user store (`lib/data/users.ts`) until Prisma lands; then switch to the Prisma adapter with database sessions and add Google (FR-001). |
 | Testing (planned) | Vitest + React Testing Library, Playwright E2E. Do not add Jest or Cypress. |
 
 Commands (run inside `team-app/`): `npm run dev`, `npm run build`, `npm run lint`, `npx tsc --noEmit`.
@@ -31,21 +31,27 @@ Commands (run inside `team-app/`): `npm run dev`, `npm run build`, `npm run lint
 ```
 app/                         Routes (App Router). Server Components by default.
   (auth)/sign-in/            Sign-in page (/login redirects here via next.config.ts)
+  (auth)/sign-up/            Sign-up page with Owner/Walker role choice (story A1)
   dashboard/                 Protected role dashboard
   walkers/(directory)/       Walker directory + its loading.tsx (route group, see note below)
   walkers/[id]/              Public walker profile & booking
   api/<resource>/route.ts    Route Handlers: all CRUD and server-side filtering
+  api/auth/[...nextauth]/    Auth.js endpoints; api/auth/register/ creates credentials accounts
+proxy.ts                     Redirects signed-out visitors on /dashboard, /dogs, /walks to /sign-in
 components/
   ui/                        Primitives: button.tsx, form-field.tsx, styles.ts (focusRing, textLinkClasses)
   layout/                    header.tsx, footer.tsx, nav-links.tsx (client), nav-items.ts
   walkers/                   walker-card, rating-badge, filter-bar (client), booking-form (client)
   dogs/                      dog-profile-card
-  auth/                      sign-in-form (client)
+  auth/                      sign-in-form, sign-up-form (client)
 lib/
   types/index.ts             Domain types + enum tuples (USER_ROLES, DOG_SIZES, WALK_BOOKING_STATUSES)
   validation/*.ts            Zod schemas shared by Route Handlers and client forms
   data/*.ts                  Server-only data access (`import "server-only"`)
   auth/session.ts            getSession(): the only way to read the current user
+  auth/auth.ts               Auth.js setup (handlers, auth, signIn, signOut); server-only
+  auth/config.ts             Shared Auth.js config, safe for proxy.ts (no user store, no bcrypt)
+  auth/actions.ts            signOutAction Server Action
   api/http.ts                apiError(), readJsonBody()
   format.ts                  Display formatters
 ```
@@ -135,6 +141,7 @@ arbitrary color values in components.** If you need a new color, add a token.
 7. **CSRF / DoS:** JSON mutations go through `readJsonBody()` (requires `application/json` and a same-host `Origin`, and caps body size while streaming, so the body is never fully buffered). Never call `request.json()`/`request.text()` directly.
 8. **Errors:** never send stack traces, SQL, or `error.message` from caught exceptions to clients.
    Auth failures use the generic "Invalid email or password".
+   Password hashes never leave `lib/data` / `lib/auth`; the session and JWT carry only id, name, role, profileId.
 9. Security headers are set in `next.config.ts`. Don't weaken them without team review.
 10. `DEV_MOCK_SESSION_ROLE` only works when `NODE_ENV === "development"`. Never remove that guard.
 
