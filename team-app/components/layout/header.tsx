@@ -26,12 +26,12 @@ export async function Header() {
         </nav>
 
         {session ? (
-          <div className="flex items-center gap-3">
-            <p className="text-sm text-muted">
-              Signed in as <span className="font-semibold text-foreground">{session.name}</span>
+          <div className="flex min-w-0 items-center gap-3">
+            <p className="min-w-0 text-sm text-muted">
+              Signed in as <span className="font-semibold break-words text-foreground">{session.name}</span>
             </p>
-            <form action={signOutAction}>
-              <Button type="submit" variant="secondary">
+            <form action={signOutAction} className="shrink-0">
+              <Button type="submit" variant="secondary" className="whitespace-nowrap">
                 Sign out
               </Button>
             </form>

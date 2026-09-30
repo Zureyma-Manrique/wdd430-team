@@ -5,6 +5,8 @@ import { useState, type FormEvent } from "react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { TextField } from "@/components/ui/form-field";
+import { focusWithinRing } from "@/components/ui/styles";
+import { firstFieldErrors, readApiError } from "@/lib/api/error-body";
 import { signUpSchema } from "@/lib/validation/auth";
 import type { UserRole } from "@/lib/types";
 
@@ -16,13 +18,9 @@ const ROLE_OPTIONS: ReadonlyArray<{ value: UserRole; label: string; description:
   { value: "WALKER", label: "Walker", description: "I want to walk dogs in my area." },
 ];
 
-/** Reads the `details.fieldErrors` object from a spec §6 error body without trusting its shape. */
-const apiFieldErrorsSchema = z.object({
-  error: z.object({
-    message: z.string(),
-    details: z.object({ fieldErrors: z.record(z.string(), z.array(z.string())) }).optional(),
-  }),
-});
+function pickFieldErrors(fieldErrors: Record<string, string | undefined>): FieldErrors {
+  return { name: fieldErrors.name, email: fieldErrors.email, password: fieldErrors.password, role: fieldErrors.role };
+}
 
 /**
  * Sign-up form (story A1). Validates with the shared Zod schema, creates the account through
@@ -44,13 +42,7 @@ export function SignUpForm() {
     });
 
     if (!parsed.success) {
-      const fieldErrors = z.flattenError(parsed.error).fieldErrors;
-      setErrors({
-        name: fieldErrors.name?.[0],
-        email: fieldErrors.email?.[0],
-        password: fieldErrors.password?.[0],
-        role: fieldErrors.role?.[0],
-      });
+      setErrors(pickFieldErrors(firstFieldErrors(z.flattenError(parsed.error).fieldErrors)));
       setFormError(null);
       return;
     }
@@ -66,20 +58,15 @@ export function SignUpForm() {
       });
 
       if (!response.ok) {
-        const body = apiFieldErrorsSchema.safeParse(await response.json().catch(() => null));
+        const apiError = await readApiError(response);
         if (response.status === 409) {
           setErrors({ email: "An account with this email already exists" });
-        } else if (body.success && body.data.error.details) {
-          const fieldErrors = body.data.error.details.fieldErrors;
-          setErrors({
-            name: fieldErrors.name?.[0],
-            email: fieldErrors.email?.[0],
-            password: fieldErrors.password?.[0],
-            role: fieldErrors.role?.[0],
-          });
+        } else if (Object.keys(apiError.fieldErrors).length > 0) {
+          setErrors(pickFieldErrors(apiError.fieldErrors));
         } else {
-          setFormError(body.success ? body.data.error.message : "Something went wrong. Please try again.");
+          setFormError(apiError.message);
         }
+        setPending(false);
         return;
       }
 
@@ -92,13 +79,14 @@ export function SignUpForm() {
       if (!result.ok || result.error || !result.url) {
         // The account exists; only the automatic sign-in failed.
         setFormError("Your account was created, but we couldn't sign you in. Please sign in.");
+        setPending(false);
         return;
       }
-      // Full page load so no route cached while signed out is reused (see SignInForm).
+      // Full page load so no route cached while signed out is reused (see SignInForm). `pending`
+      // stays on while the next page loads.
       window.location.assign(result.url);
     } catch {
       setFormError("Something went wrong. Please try again.");
-    } finally {
       setPending(false);
     }
   }
@@ -120,7 +108,7 @@ export function SignUpForm() {
           {ROLE_OPTIONS.map((option) => (
             <label
               key={option.value}
-              className="flex min-h-11 cursor-pointer items-start gap-3 rounded-lg border border-border bg-surface p-3 has-checked:border-primary has-checked:bg-primary-soft has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-primary"
+              className={`flex min-h-11 cursor-pointer items-start gap-3 rounded-lg border border-border bg-surface p-3 has-checked:border-primary has-checked:bg-primary-soft ${focusWithinRing}`}
             >
               <input
                 type="radio"
@@ -169,8 +157,8 @@ export function SignUpForm() {
         autoComplete="new-password"
         required
         minLength={8}
-        maxLength={128}
-        hint="At least 8 characters."
+        maxLength={72}
+        hint="8 to 72 characters."
         error={errors.password}
       />
 
