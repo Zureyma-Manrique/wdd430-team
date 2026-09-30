@@ -69,6 +69,15 @@ export interface WalkerSummary extends Walker {
   reviewCount: number;
 }
 
+/**
+ * What `GET /api/walkers/[id]` returns to anyone, signed in or not. Lists fields explicitly so
+ * internal ones (`userId`, `isActive`, and any column added later) never leak by default.
+ */
+export type PublicWalkerProfile = Pick<
+  WalkerSummary,
+  "id" | "displayName" | "bio" | "serviceAreaPostalCodes" | "hourlyRate" | "photoUrl" | "averageRating" | "reviewCount"
+>;
+
 export interface DogProfile {
   id: string;
   ownerId: string;
