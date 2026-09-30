@@ -5,6 +5,7 @@ import { OwnerProfileForm } from "@/components/profile/owner-profile-form";
 import { WalkerProfileForm } from "@/components/profile/walker-profile-form";
 import { textLinkClasses } from "@/components/ui/styles";
 import { getSession } from "@/lib/auth/session";
+import { formatPhone } from "@/lib/format";
 import { getOwnOwnerProfile } from "@/lib/data/owners";
 import { getOwnWalkerProfile, getWalkerById } from "@/lib/data/walkers";
 
@@ -33,7 +34,13 @@ export default async function ProfilePage() {
         </header>
 
         <div className="rounded-xl border border-border bg-surface p-6 shadow-sm">
-          <OwnerProfileForm owner={{ name: session.name, phone: owner.phone, postalCode: owner.postalCode }} />
+          <OwnerProfileForm
+            owner={{
+              name: session.name,
+              phone: owner.phone === null ? null : formatPhone(owner.phone),
+              postalCode: owner.postalCode,
+            }}
+          />
         </div>
       </div>
     );

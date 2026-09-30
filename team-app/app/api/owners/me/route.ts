@@ -2,7 +2,7 @@ import { z } from "zod";
 import { apiError, readJsonBody } from "@/lib/api/http";
 import { getSession } from "@/lib/auth/session";
 import { getOwnOwnerProfile, updateOwnerProfile } from "@/lib/data/owners";
-import { updateUserName } from "@/lib/data/users";
+import { findUserById, updateUserName } from "@/lib/data/users";
 import type { PetOwner, SessionUser } from "@/lib/types";
 import { ownerProfileUpdateSchema } from "@/lib/validation";
 
@@ -56,19 +56,18 @@ export async function PATCH(request: Request): Promise<Response> {
     return apiError(400, "VALIDATION_ERROR", "Check the highlighted fields", { formErrors, fieldErrors });
   }
 
-  // Ids come from the session, so an owner can only ever edit their own profile.
+  // Ids come from the session, so an owner can only ever edit their own profile. Both records
+  // are checked before either is written, so a `404` never leaves a half-saved change.
+  // TODO(feature/data-model): wrap both writes in one `prisma.$transaction`.
   const { name, ...profile } = parsed.data;
+  if (!(await getOwnOwnerProfile(auth.session.profileId)) || !(await findUserById(auth.session.id))) {
+    return apiError(404, "NOT_FOUND", "Owner profile not found");
+  }
+
+  const account = name === undefined ? null : await updateUserName(auth.session.id, name);
   const owner = await updateOwnerProfile(auth.session.profileId, profile);
   if (!owner) {
     return apiError(404, "NOT_FOUND", "Owner profile not found");
   }
-  let currentName = auth.session.name;
-  if (name !== undefined) {
-    const account = await updateUserName(auth.session.id, name);
-    if (!account) {
-      return apiError(404, "NOT_FOUND", "Account not found");
-    }
-    currentName = account.name;
-  }
-  return Response.json(toBody(owner, currentName));
+  return Response.json(toBody(owner, account?.name ?? auth.session.name));
 }
