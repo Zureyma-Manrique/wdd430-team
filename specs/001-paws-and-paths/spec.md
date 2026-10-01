@@ -569,6 +569,16 @@ Status codes: `200` OK · `201` Created · `204` No Content · `400` validation 
 | `GET` | `/api/walkers/me` | My walker profile | Walker |
 | `PATCH` | `/api/walkers/me` | Update `{ bio?, serviceAreaPostalCodes?, hourlyRate?, photoUrl?, isActive? }`. Setting `isActive: false` cancels upcoming walks | Walker |
 
+`GET /api/walkers/[id]` returns only public fields: `id`, `displayName`, `bio`,
+`serviceAreaPostalCodes`, `hourlyRate`, `photoUrl`, `averageRating`, `reviewCount`.
+
+### Owners — `/api/owners`
+
+| Method | Path | Description | Auth |
+|---|---|---|---|
+| `GET` | `/api/owners/me` | My owner profile `{ id, name, phone, postalCode }` | Owner |
+| `PATCH` | `/api/owners/me` | Update `{ name?, phone?, postalCode? }` (story A3). `null` clears `phone` or `postalCode`; the phone is stored as digits with an optional leading `+` | Owner |
+
 ---
 
 ## 7. Implementation Priority

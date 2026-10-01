@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { focusRing } from "@/components/ui/styles";
+import { getSession } from "@/lib/auth/session";
 import { PRIMARY_NAV } from "./nav-items";
 
 const footerLinkClasses = `inline-flex min-h-11 items-center rounded text-sm text-muted underline-offset-4 hover:text-foreground hover:underline ${focusRing}`;
 
-export function Footer() {
+export async function Footer() {
+  const session = await getSession();
+
   return (
     <footer className="mt-auto border-t border-border bg-surface">
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:flex-row sm:items-start sm:justify-between sm:px-6 lg:px-8">
@@ -27,14 +30,16 @@ export function Footer() {
                 </Link>
               </li>
             ))}
-            <li>
-              <Link
-                href="/sign-in"
-                className={footerLinkClasses}
-              >
-                Sign in
-              </Link>
-            </li>
+            {session ? null : (
+              <li>
+                <Link
+                  href="/sign-in"
+                  className={footerLinkClasses}
+                >
+                  Sign in
+                </Link>
+              </li>
+            )}
           </ul>
         </nav>
       </div>

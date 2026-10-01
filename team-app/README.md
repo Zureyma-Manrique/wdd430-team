@@ -9,6 +9,8 @@ cp .env.example .env.local
 npx auth secret   # or paste the output of `openssl rand -base64 32` into AUTH_SECRET
 ```
 
+To try a production build locally (`npm run build && npm start`), also set `AUTH_TRUST_HOST=true` in `.env.local`. Auth.js trusts the host automatically only in development and on Vercel.
+
 Then run the development server:
 
 ```bash

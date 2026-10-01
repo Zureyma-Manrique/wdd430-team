@@ -1,5 +1,5 @@
 import "server-only";
-import type { PublicWalkerReview, Walker, WalkerSummary } from "@/lib/types";
+import type { PublicWalkerProfile, PublicWalkerReview, Walker, WalkerSummary } from "@/lib/types";
 import type { WalkerProfileUpdateInput, WalkerSearchParams } from "@/lib/validation";
 import { seedReviews, seedWalkers } from "./seed";
 
@@ -54,6 +54,12 @@ export async function getWalkerById(id: string): Promise<WalkerSummary | null> {
   return walker && isSearchable(walker) ? withRatings(walker) : null;
 }
 
+/** Public shape of a searchable walker (FR-040): no account id or internal flags. */
+export function toPublicWalkerProfile(walker: WalkerSummary): PublicWalkerProfile {
+  const { id, displayName, bio, serviceAreaPostalCodes, hourlyRate, photoUrl, averageRating, reviewCount } = walker;
+  return { id, displayName, bio, serviceAreaPostalCodes, hourlyRate, photoUrl, averageRating, reviewCount };
+}
+
 /**
  * The signed-in walker's own profile, complete or not (story A3). `walkerId` MUST come from
  * the session, never from the request.
@@ -90,7 +96,8 @@ export async function updateWalkerProfile(walkerId: string, input: WalkerProfile
     ...(input.serviceAreaPostalCodes !== undefined ? { serviceAreaPostalCodes: input.serviceAreaPostalCodes } : {}),
     ...(input.hourlyRate !== undefined ? { hourlyRate: input.hourlyRate } : {}),
     ...(input.photoUrl !== undefined ? { photoUrl: input.photoUrl } : {}),
-    // TODO(feature/schedule-api): setting isActive to false must also cancel upcoming walks.
+    // TODO(feature/schedule-api): setting isActive to false must also cancel upcoming walks
+    // (spec §6 PATCH /api/walkers/me and the "walker deactivates" edge case; cancel flow is issue #12, story C5).
     ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
   };
   walkersById.set(walkerId, updated);

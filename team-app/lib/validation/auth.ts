@@ -8,14 +8,25 @@ export const emailSchema = z
   .max(254)
   .pipe(z.email({ error: "Enter a valid email address" }));
 
+/**
+ * bcrypt only uses the first 72 bytes of a password (NFR-003). Longer passwords would let a
+ * different password with the same first 72 bytes sign in, so they are rejected instead.
+ */
+export const PASSWORD_MAX_BYTES = 72;
+
+export function passwordFitsBcrypt(value: string): boolean {
+  return new TextEncoder().encode(value).length <= PASSWORD_MAX_BYTES;
+}
+
 export const passwordSchema = z
   .string()
   .min(8, { error: "Password must be at least 8 characters" })
-  .max(128, { error: "Password must be 128 characters or fewer" });
+  .refine(passwordFitsBcrypt, { error: "Password must be 72 characters or fewer" });
 
 export const signInSchema = z.strictObject({
   email: emailSchema,
-  // Sign-in only checks presence; strength rules apply at sign-up.
+  // Sign-in only checks presence; strength rules apply at sign-up. `authorize()` rejects
+  // passwords over the bcrypt byte cap with the generic failure message.
   password: z.string().min(1, { error: "Enter your password" }).max(128),
 });
 export type SignInInput = z.infer<typeof signInSchema>;

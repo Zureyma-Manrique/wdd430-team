@@ -24,7 +24,8 @@ export const walkerProfileUpdateSchema = z
     serviceAreaPostalCodes: z
       .array(postalCodeSchema)
       .min(1, { error: "Add at least one postal code" })
-      .max(10, { error: "Add at most 10 postal codes" }),
+      .max(10, { error: "Add at most 10 postal codes" })
+      .refine((codes) => new Set(codes).size === codes.length, { error: "List each postal code only once" }),
     hourlyRate: z
       .number({ error: "Enter an hourly rate" })
       .int({ error: "Use whole dollars" })

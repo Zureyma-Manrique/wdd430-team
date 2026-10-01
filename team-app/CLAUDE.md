@@ -42,7 +42,7 @@ app/                         Routes (App Router). Server Components by default.
   api/owners/me/             GET/PATCH my owner profile (name, phone, postal code)
 proxy.ts                     Redirects signed-out visitors on /dashboard, /dogs, /walks, /profile to /sign-in
 components/
-  ui/                        Primitives: button.tsx, form-field.tsx, styles.ts (focusRing, textLinkClasses)
+  ui/                        Primitives: button.tsx, form-field.tsx, form-notice.tsx (client), styles.ts (focusRing, focusWithinRing, textLinkClasses)
   layout/                    header.tsx, footer.tsx, nav-links.tsx (client), nav-items.ts
   walkers/                   walker-card, rating-badge, filter-bar (client), booking-form (client)
   dogs/                      dog-profile-card
@@ -56,7 +56,8 @@ lib/
   auth/auth.ts               Auth.js setup (handlers, auth, signIn, signOut); server-only
   auth/config.ts             Shared Auth.js config, safe for proxy.ts (no user store, no bcrypt)
   auth/actions.ts            signOutAction Server Action
-  api/http.ts                apiError(), readJsonBody()
+  api/http.ts                apiError(), readJsonBody() (server-only)
+  api/error-body.ts          readApiError(), firstFieldErrors(): client-safe reader for spec §6 error bodies
   format.ts                  Display formatters
 ```
 
@@ -118,7 +119,8 @@ arbitrary color values in components.** If you need a new color, add a token.
   Controls use `rounded-lg`.
 - **Mobile first:** base styles target 360px. Add `sm:`, `md:`, `lg:` upward.
 - **Accessibility (WCAG 2.1 AA):** every text pair ≥ 4.5:1. Interactive targets `min-h-11` (44px).
-  Visible focus via the shared `focusRing` constant (`components/ui/styles.ts`); never re-type the classes.
+  Visible focus via the shared `focusRing` constant (`components/ui/styles.ts`), or `focusWithinRing` on a
+  `<label>` that wraps a radio or checkbox; never re-type the classes.
   When a multi-step UI swaps content, move focus to the new heading or status (see `booking-form.tsx`).
   Status is never shown by color alone (badges contain text). Forms use `TextField`/`SelectField`/
   `TextAreaField`, which wire up `label`, `aria-invalid`, and `aria-describedby`. Emoji decoration is `aria-hidden`.

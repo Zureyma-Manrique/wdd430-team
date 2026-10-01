@@ -203,7 +203,7 @@ export const seedDogs: readonly DogProfile[] = [
 
 export const seedOwners: readonly PetOwner[] = [
   // Jordan, the demo owner account (jordan@example.com).
-  { id: "o_demo01", userId: "u_demo_owner", phone: "801-555-0142", postalCode: "84604" },
+  { id: "o_demo01", userId: "u_demo_owner", phone: "8015550142", postalCode: "84604" },
   // Otis's owner. No account yet; only here so ownership checks have someone else's data.
   { id: "o_other", userId: "u_other", phone: null, postalCode: null },
 ];

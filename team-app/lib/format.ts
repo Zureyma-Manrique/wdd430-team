@@ -20,6 +20,12 @@ export function formatDogSize(size: DogSize): string {
   return DOG_SIZE_LABELS[size];
 }
 
+/** Stored phone digits for display: a 10-digit US number becomes `(801) 555-0142`; others show as stored. */
+export function formatPhone(phone: string): string {
+  const match = /^(\d{3})(\d{3})(\d{4})$/.exec(phone);
+  return match ? `(${match[1]}) ${match[2]}-${match[3]}` : phone;
+}
+
 /** Up to two initials, e.g. "Sam Rivera" → "SR". */
 export function initials(name: string): string {
   return name

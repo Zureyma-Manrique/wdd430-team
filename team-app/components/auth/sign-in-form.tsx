@@ -46,14 +46,15 @@ export function SignInForm({ callbackUrl }: SignInFormProps) {
       const result = await signIn("credentials", { ...parsed.data, redirectTo: callbackUrl, redirect: false });
       if (!result.ok || result.error || !result.url) {
         setFormError("Invalid email or password");
+        setPending(false);
         return;
       }
       // Full page load to the URL Auth.js approved, not a client-side navigation: the client
       // router may still hold a cached "redirect to sign-in" from before the session existed.
+      // `pending` stays on so the button can't send a second sign-in while the page loads.
       window.location.assign(result.url);
     } catch {
       setFormError("Something went wrong. Please try again.");
-    } finally {
       setPending(false);
     }
   }

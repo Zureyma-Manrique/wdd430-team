@@ -1,26 +1,20 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { TextField } from "@/components/ui/form-field";
+import { FormNotice, useFormNotice } from "@/components/ui/form-notice";
+import { firstFieldErrors, readApiError } from "@/lib/api/error-body";
 import { ownerProfileUpdateSchema } from "@/lib/validation/owner";
 
 type FieldName = "name" | "phone" | "postalCode";
 type FieldErrors = Partial<Record<FieldName, string>>;
-type Notice = { tone: "success" | "error"; message: string };
 
 interface OwnerProfileFormProps {
   owner: { name: string; phone: string | null; postalCode: string | null };
 }
-
-const apiErrorSchema = z.object({
-  error: z.object({
-    message: z.string(),
-    details: z.object({ fieldErrors: z.record(z.string(), z.array(z.string())) }).optional(),
-  }),
-});
 
 /** An empty optional box becomes `null`, which clears the saved value. */
 function blankToNull(value: FormDataEntryValue | null): string | null {
@@ -28,8 +22,8 @@ function blankToNull(value: FormDataEntryValue | null): string | null {
   return text === "" ? null : text;
 }
 
-function pickFieldErrors(fieldErrors: Record<string, string[] | undefined>): FieldErrors {
-  return { name: fieldErrors.name?.[0], phone: fieldErrors.phone?.[0], postalCode: fieldErrors.postalCode?.[0] };
+function pickFieldErrors(fieldErrors: Record<string, string | undefined>): FieldErrors {
+  return { name: fieldErrors.name, phone: fieldErrors.phone, postalCode: fieldErrors.postalCode };
 }
 
 /**
@@ -38,16 +32,9 @@ function pickFieldErrors(fieldErrors: Record<string, string[] | undefined>): Fie
  */
 export function OwnerProfileForm({ owner }: OwnerProfileFormProps) {
   const router = useRouter();
-  const noticeRef = useRef<HTMLParagraphElement>(null);
+  const { notice, noticeRef, showNotice, clearNotice } = useFormNotice();
   const [errors, setErrors] = useState<FieldErrors>({});
-  const [notice, setNotice] = useState<Notice | null>(null);
   const [pending, setPending] = useState(false);
-
-  function showNotice(next: Notice) {
-    setNotice(next);
-    // Move focus to the result so screen reader and keyboard users hear it.
-    requestAnimationFrame(() => noticeRef.current?.focus());
-  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -59,13 +46,13 @@ export function OwnerProfileForm({ owner }: OwnerProfileFormProps) {
     });
 
     if (!parsed.success) {
-      setErrors(pickFieldErrors(z.flattenError(parsed.error).fieldErrors));
-      setNotice(null);
+      setErrors(pickFieldErrors(firstFieldErrors(z.flattenError(parsed.error).fieldErrors)));
+      clearNotice();
       return;
     }
 
     setErrors({});
-    setNotice(null);
+    clearNotice();
     setPending(true);
     try {
       const response = await fetch("/api/owners/me", {
@@ -74,14 +61,9 @@ export function OwnerProfileForm({ owner }: OwnerProfileFormProps) {
         body: JSON.stringify(parsed.data),
       });
       if (!response.ok) {
-        const body = apiErrorSchema.safeParse(await response.json().catch(() => null));
-        if (body.success && body.data.error.details) {
-          setErrors(pickFieldErrors(body.data.error.details.fieldErrors));
-        }
-        showNotice({
-          tone: "error",
-          message: body.success ? body.data.error.message : "Something went wrong. Please try again.",
-        });
+        const apiError = await readApiError(response);
+        setErrors(pickFieldErrors(apiError.fieldErrors));
+        showNotice({ tone: "error", message: apiError.message });
         return;
       }
       showNotice({ tone: "success", message: "Profile saved." });
@@ -96,19 +78,7 @@ export function OwnerProfileForm({ owner }: OwnerProfileFormProps) {
 
   return (
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
-      {notice ? (
-        <p
-          ref={noticeRef}
-          tabIndex={-1}
-          role={notice.tone === "error" ? "alert" : "status"}
-          className={
-            "rounded-lg px-3 py-2 text-sm font-medium focus-visible:outline-none " +
-            (notice.tone === "success" ? "bg-primary-soft text-primary" : "bg-danger-soft text-danger")
-          }
-        >
-          {notice.message}
-        </p>
-      ) : null}
+      <FormNotice notice={notice} noticeRef={noticeRef} />
 
       <TextField
         id="owner-name"
