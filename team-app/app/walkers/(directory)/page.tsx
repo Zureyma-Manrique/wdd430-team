@@ -3,11 +3,14 @@ import { FilterBar } from "@/components/walkers/filter-bar";
 import { WalkerCard } from "@/components/walkers/walker-card";
 import { searchWalkers } from "@/lib/data/walkers";
 import { walkerSearchParamsSchema, type WalkerSearchParams } from "@/lib/validation";
+import { pageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Find a walker",
-  description: "Browse trusted local dog walkers by postal code, rating, and price.",
-};
+  description:
+    "Browse trusted local dog walkers by postal code, rating, and price. Read reviews from completed walks before you book.",
+  path: "/walkers",
+});
 
 const DEFAULT_FILTERS: WalkerSearchParams = { sort: "rating" };
 

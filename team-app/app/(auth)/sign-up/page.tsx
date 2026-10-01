@@ -4,10 +4,14 @@ import { redirect } from "next/navigation";
 import { SignUpForm } from "@/components/auth/sign-up-form";
 import { textLinkClasses } from "@/components/ui/styles";
 import { getSession } from "@/lib/auth/session";
+import { pageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Sign up",
-};
+  description: "Create a free Paws & Paths account as a dog owner or as a dog walker.",
+  path: "/sign-up",
+  private: true,
+});
 
 export default async function SignUpPage() {
   if (await getSession()) {

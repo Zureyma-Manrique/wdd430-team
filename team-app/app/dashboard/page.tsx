@@ -5,10 +5,14 @@ import { ButtonLink } from "@/components/ui/button";
 import { getSession } from "@/lib/auth/session";
 import { getDogsForOwner } from "@/lib/data/dogs";
 import { getOwnWalkerProfile } from "@/lib/data/walkers";
+import { pageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Dashboard",
-};
+  description: "Your dogs, walk requests, and upcoming walks in one place.",
+  path: "/dashboard",
+  private: true,
+});
 
 export default async function DashboardPage() {
   // Deny by default: no session → sign in, then come back here (story A1, scenario 5).

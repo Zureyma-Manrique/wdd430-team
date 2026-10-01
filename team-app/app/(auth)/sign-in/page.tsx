@@ -5,10 +5,14 @@ import { SignInForm } from "@/components/auth/sign-in-form";
 import { textLinkClasses } from "@/components/ui/styles";
 import { getSession } from "@/lib/auth/session";
 import { callbackUrlSchema } from "@/lib/validation";
+import { pageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Sign in",
-};
+  description: "Sign in to Paws & Paths to manage your dogs, book walks, or answer walk requests.",
+  path: "/sign-in",
+  private: true,
+});
 
 export default async function SignInPage({ searchParams }: PageProps<"/sign-in">) {
   const { callbackUrl: rawCallbackUrl } = await searchParams;

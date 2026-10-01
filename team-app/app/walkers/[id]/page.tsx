@@ -13,6 +13,7 @@ import { getDogsForOwner } from "@/lib/data/dogs";
 import { getWalkerById, getWalkerReviews } from "@/lib/data/walkers";
 import { formatDateUtc, formatHourlyRate } from "@/lib/format";
 import { idParamsSchema } from "@/lib/validation";
+import { pageMetadata, SITE_NAME } from "@/lib/metadata";
 
 const REVIEWS_PAGE_SIZE = 10;
 
@@ -34,10 +35,14 @@ async function loadWalker(params: Promise<{ id: string }>) {
 
 export async function generateMetadata({ params }: PageProps<"/walkers/[id]">): Promise<Metadata> {
   const walker = await loadWalker(params);
-  return {
+  return pageMetadata({
     title: walker.displayName,
-    description: walker.bio ?? `Book a dog walk with ${walker.displayName}.`,
-  };
+    description: walker.bio ?? `Book a dog walk with ${walker.displayName}, a local walker on ${SITE_NAME}.`,
+    path: `/walkers/${walker.id}`,
+    openGraphType: "profile",
+    // `photoUrl` passed `httpsUrlSchema` when it was saved (FR-040).
+    image: walker.photoUrl ? { url: walker.photoUrl, alt: `Photo of ${walker.displayName}` } : undefined,
+  });
 }
 
 export default async function WalkerProfilePage({ params, searchParams }: PageProps<"/walkers/[id]">) {
