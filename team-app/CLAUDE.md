@@ -36,6 +36,7 @@ app/                         Routes (App Router). Server Components by default.
   profile/                   Profile editor for walkers and owners (story A3)
   walkers/(directory)/       Walker directory + its loading.tsx (route group, see note below)
   walkers/[id]/              Public walker profile & booking
+  opengraph-image.tsx        Default share image (generated at build time); robots.ts, sitemap.ts (NFR-005)
   api/<resource>/route.ts    Route Handlers: all CRUD and server-side filtering
   api/auth/[...nextauth]/    Auth.js endpoints; api/auth/register/ creates credentials accounts
   api/walkers/me/            GET/PATCH my walker profile; api/walkers/[id]/ is the public profile
@@ -59,6 +60,7 @@ lib/
   api/http.ts                apiError(), readJsonBody() (server-only)
   api/error-body.ts          readApiError(), firstFieldErrors(): client-safe reader for spec §6 error bodies
   format.ts                  Display formatters
+  metadata.ts                pageMetadata(), SITE_NAME/SITE_URL: shared page metadata (NFR-005)
 ```
 
 **Naming** (Constitution V): files and dirs `kebab-case`; components `PascalCase`; functions and
@@ -95,11 +97,18 @@ Add enum values to the `as const` tuples in `lib/types`. Zod schemas derive from
   so detail routes like `walkers/[id]` still return real `404`s.
 - Filters live in the URL query string. The page validates `searchParams` with Zod and falls back to defaults on invalid input.
 - API errors use `{ error: { code, message, details? } }` via `apiError()` (spec §6).
+- **Metadata (NFR-005):** every page exports `metadata = pageMetadata({ title, description, path })`
+  (or returns it from `generateMetadata`). Next merges metadata *shallowly*, so a hand-written
+  `openGraph` object would drop the layout's `siteName`, `locale` and share image; the helper
+  rebuilds all of them (the image defaults to `app/opengraph-image.tsx`).
+  Pass `private: true` for signed-in and sign-in/sign-up pages (`noindex`), and add new private
+  routes to `app/robots.ts`. Descriptions are trimmed to 160 characters.
 
 ## Visual design system
 
 Tokens are defined in `app/globals.css` with light and dark values. **Never hard-code hex colors or
-arbitrary color values in components.** If you need a new color, add a token.
+arbitrary color values in components.** If you need a new color, add a token. (Only exception:
+`app/opengraph-image.tsx`, which renders outside the browser and copies the token values.)
 
 | Token (utility) | Use |
 |---|---|

@@ -511,6 +511,11 @@ All technical choices follow the [constitution](../../.specify/memory/constituti
 - **NFR-003 Security**: passwords are hashed; authorization is checked on the server for every
   request; all input is validated with Zod; no secrets are sent to the client bundle.
 - **NFR-004 Responsiveness**: every page is usable at 360 px width and up.
+- **NFR-005 Metadata & discoverability**: every page has a unique title and a description of at
+  most 160 characters, a canonical URL, and Open Graph/Twitter tags (a default share image, or the
+  walker's photo on a walker profile). Signed-in and sign-in/sign-up pages send `noindex`.
+  `/robots.txt` blocks `/api/` and signed-in pages, and `/sitemap.xml` lists the public pages and
+  every searchable walker.
 
 ---
 

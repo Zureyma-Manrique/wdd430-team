@@ -8,10 +8,14 @@ import { getSession } from "@/lib/auth/session";
 import { formatPhone } from "@/lib/format";
 import { getOwnOwnerProfile } from "@/lib/data/owners";
 import { getOwnWalkerProfile, getWalkerById } from "@/lib/data/walkers";
+import { pageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Your profile",
-};
+  description: "Update your contact details, or your walker bio, service area, and hourly rate.",
+  path: "/profile",
+  private: true,
+});
 
 export default async function ProfilePage() {
   // Deny by default: `proxy.ts` also guards /profile, but pages never rely on it alone.

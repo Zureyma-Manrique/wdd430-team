@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
+import { SITE_DEFAULT_METADATA, SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/metadata";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,13 +15,16 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Defaults for every route. Pages override them with `pageMetadata()` (lib/metadata.ts).
 export const metadata: Metadata = {
+  ...SITE_DEFAULT_METADATA,
+  // Lets canonical and Open Graph URLs be written as site-relative paths.
+  metadataBase: new URL(SITE_URL),
+  applicationName: SITE_NAME,
   title: {
-    default: "Paws & Paths: Trusted local dog walkers",
-    template: "%s · Paws & Paths",
+    default: `${SITE_NAME}: ${SITE_TAGLINE}`,
+    template: `%s · ${SITE_NAME}`,
   },
-  description:
-    "Paws & Paths connects dog owners with trusted local walkers. Store your dog's care details, find a walker nearby, and book walks.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

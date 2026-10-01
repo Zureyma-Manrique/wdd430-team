@@ -1,6 +1,14 @@
+import type { Metadata } from "next";
 import { ButtonLink } from "@/components/ui/button";
 import { WalkerCard } from "@/components/walkers/walker-card";
 import { searchWalkers } from "@/lib/data/walkers";
+import { pageMetadata, SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE } from "@/lib/metadata";
+
+export const metadata: Metadata = {
+  ...pageMetadata({ title: SITE_TAGLINE, description: SITE_DESCRIPTION, path: "/" }),
+  // The home page shows the full name instead of the "%s · Paws & Paths" template.
+  title: { absolute: `${SITE_NAME}: ${SITE_TAGLINE}` },
+};
 
 const SERVICES = [
   {
