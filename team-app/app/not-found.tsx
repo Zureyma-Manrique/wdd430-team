@@ -1,4 +1,12 @@
+import type { Metadata } from "next";
 import { ButtonLink } from "@/components/ui/button";
+
+// Its own title, so the 404 page doesn't look like the home page in tabs and history. Next adds
+// `noindex` to not-found pages by itself.
+export const metadata: Metadata = {
+  title: "Page not found",
+  description: "This page doesn't exist or has moved. Head back to the home page or find a walker.",
+};
 
 export default function NotFound() {
   return (

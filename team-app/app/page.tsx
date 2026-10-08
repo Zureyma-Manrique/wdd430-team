@@ -5,8 +5,13 @@ import { searchWalkers } from "@/lib/data/walkers";
 import { pageMetadata, SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE } from "@/lib/metadata";
 
 export const metadata: Metadata = {
-  ...pageMetadata({ title: SITE_TAGLINE, description: SITE_DESCRIPTION, path: "/" }),
-  // The home page shows the full name instead of the "%s · Paws & Paths" template.
+  ...pageMetadata({
+    title: SITE_TAGLINE,
+    // Same text in `<title>`, `og:title` and `twitter:title`; the "%s · Paws & Paths" template would reverse it.
+    shareTitle: `${SITE_NAME}: ${SITE_TAGLINE}`,
+    description: SITE_DESCRIPTION,
+    path: "/",
+  }),
   title: { absolute: `${SITE_NAME}: ${SITE_TAGLINE}` },
 };
 

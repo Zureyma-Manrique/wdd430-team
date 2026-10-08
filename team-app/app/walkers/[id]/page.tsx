@@ -39,7 +39,7 @@ export async function generateMetadata({ params }: PageProps<"/walkers/[id]">): 
     title: walker.displayName,
     description: walker.bio ?? `Book a dog walk with ${walker.displayName}, a local walker on ${SITE_NAME}.`,
     path: `/walkers/${walker.id}`,
-    openGraphType: "profile",
+    profileFirstName: walker.displayName.split(" ")[0],
     // `photoUrl` passed `httpsUrlSchema` when it was saved (FR-040).
     image: walker.photoUrl ? { url: walker.photoUrl, alt: `Photo of ${walker.displayName}` } : undefined,
   });

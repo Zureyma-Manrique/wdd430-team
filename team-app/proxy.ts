@@ -24,6 +24,7 @@ export const proxy = auth((request) => {
   return NextResponse.redirect(signInUrl);
 });
 
+// Keep in sync with the `disallow` list in app/robots.ts. `matcher` must be a static literal.
 export const config = {
   matcher: ["/dashboard/:path*", "/dogs/:path*", "/walks/:path*", "/profile/:path*"],
 };

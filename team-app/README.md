@@ -11,6 +11,16 @@ npx auth secret   # or paste the output of `openssl rand -base64 32` into AUTH_S
 
 To try a production build locally (`npm run build && npm start`), also set `AUTH_TRUST_HOST=true` in `.env.local`. Auth.js trusts the host automatically only in development and on Vercel.
 
+### Deploying
+
+Before the first deployment, set these in the host's environment variables (never commit them):
+
+| Variable | Why |
+|---|---|
+| `AUTH_SECRET` | Signs sessions. Generate with `npx auth secret`. |
+| `AUTH_TRUST_HOST=true` | Needed anywhere except Vercel and local development. |
+| `SITE_URL` | The public origin, e.g. `https://paws-and-paths.vercel.app`. Used for canonical URLs, Open Graph tags, `robots.txt` and the sitemap. Vercel's own domain is used if it's empty; anywhere else the app falls back to `http://localhost:3000` and prints a `[metadata]` warning at startup.|
+
 Then run the development server:
 
 ```bash
