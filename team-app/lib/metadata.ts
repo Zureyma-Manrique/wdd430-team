@@ -17,22 +17,61 @@ export const SITE_DESCRIPTION =
 /** Search snippets cut off around 160 characters. */
 const DESCRIPTION_MAX = 160;
 
+const DEV_SITE_URL = "http://localhost:3000";
+const httpUrlSchema = z.url({ protocol: /^https?$/ });
+
+/**
+ * The site's public origin, in order of preference:
+ * 1. `SITE_URL` (set it explicitly for any real deployment);
+ * 2. Vercel's production domain, which Vercel provides on every deployment (no setup needed);
+ * 3. the URL of the current Vercel deployment (previews);
+ * 4. `http://localhost:3000`, flagged as a fallback so it can't go unnoticed in production.
+ *
+ * Invalid or empty values are skipped, so a typo can't break the build.
+ */
+export function resolveSiteUrl(env: Record<string, string | undefined>): { url: string; isFallback: boolean } {
+  const candidates = [
+    env.SITE_URL,
+    env.VERCEL_PROJECT_PRODUCTION_URL && `https://${env.VERCEL_PROJECT_PRODUCTION_URL}`,
+    env.VERCEL_URL && `https://${env.VERCEL_URL}`,
+  ];
+  for (const candidate of candidates) {
+    const parsed = httpUrlSchema.safeParse(candidate);
+    if (parsed.success) return { url: parsed.data, isFallback: false };
+  }
+  return { url: DEV_SITE_URL, isFallback: true };
+}
+
+const resolvedSiteUrl = resolveSiteUrl(process.env);
+
 /**
  * Public origin used for absolute URLs in canonical links, Open Graph tags, robots.txt and the
- * sitemap. Not a secret. Falls back to the dev server when unset or invalid, so a typo can't
- * break the build.
+ * sitemap. Not a secret.
  */
-export const SITE_URL = z
-  .url({ protocol: /^https?$/ })
-  .catch("http://localhost:3000")
-  .parse(process.env.SITE_URL ?? "http://localhost:3000");
+export const SITE_URL = resolvedSiteUrl.url;
 
-/** Trims to a search-snippet-sized description on a word boundary. */
+// A production server that can only guess "localhost" would tell search engines that every page's
+// canonical URL is localhost. Warn loudly instead of staying silent (NFR-005). Skipped during
+// `next build`, where each build worker would repeat it; the running server prints it.
+if (
+  resolvedSiteUrl.isFallback &&
+  process.env.NODE_ENV === "production" &&
+  process.env.NEXT_PHASE !== "phase-production-build"
+) {
+  console.warn(
+    `[metadata] SITE_URL is not set (or is not a valid http(s) URL), so canonical URLs, Open Graph tags, robots.txt and the sitemap use ${DEV_SITE_URL}. Set SITE_URL to the site's public origin.`,
+  );
+}
+
+/** Trims to a search-snippet-sized description on a word boundary, never splitting an emoji. */
 export function toDescription(text: string): string {
   const clean = text.replace(/\s+/g, " ").trim();
-  if (clean.length <= DESCRIPTION_MAX) return clean;
-  const cut = clean.slice(0, DESCRIPTION_MAX - 1);
-  return `${cut.slice(0, cut.lastIndexOf(" ") > 0 ? cut.lastIndexOf(" ") : cut.length)}…`;
+  // Count and cut by code point: `slice` works on UTF-16 units and can leave half an emoji.
+  const chars = [...clean];
+  if (chars.length <= DESCRIPTION_MAX) return clean;
+  const cut = chars.slice(0, DESCRIPTION_MAX - 1).join("");
+  const lastSpace = cut.lastIndexOf(" ");
+  return `${lastSpace > 0 ? cut.slice(0, lastSpace) : cut}…`;
 }
 
 /**
@@ -71,7 +110,10 @@ interface PageMetadataInput {
   path: string;
   /** `true` for pages that should not appear in search results. */
   private?: boolean;
-  openGraphType?: "website" | "profile";
+  /** Title for `og:title` and `twitter:title`. Defaults to `"<title> · Paws & Paths"`, like the `<title>` tag. */
+  shareTitle?: string;
+  /** Set on a person's page: `og:type` becomes `profile` and this is the `og:first_name`. */
+  profileFirstName?: string;
   /** Optional https image (already validated with `httpsUrlSchema`). Defaults to the generated site image. */
   image?: { url: string; alt: string };
 }
@@ -82,26 +124,28 @@ export function pageMetadata({
   description,
   path,
   private: isPrivate = false,
-  openGraphType = "website",
+  shareTitle = `${title} · ${SITE_NAME}`,
+  profileFirstName,
   image,
 }: PageMetadataInput): Metadata {
-  const shareTitle = `${title} · ${SITE_NAME}`;
   const shareDescription = toDescription(description);
   const shareImage = image ?? DEFAULT_SHARE_IMAGE;
+  const openGraphBase = {
+    siteName: SITE_NAME,
+    locale: "en_US",
+    url: path,
+    title: shareTitle,
+    description: shareDescription,
+    images: [shareImage],
+  };
   return {
     title,
     description: shareDescription,
     alternates: { canonical: path },
     ...(isPrivate ? { robots: PRIVATE_PAGE_ROBOTS } : {}),
-    openGraph: {
-      type: openGraphType,
-      siteName: SITE_NAME,
-      locale: "en_US",
-      url: path,
-      title: shareTitle,
-      description: shareDescription,
-      images: [shareImage],
-    },
+    openGraph: profileFirstName
+      ? { type: "profile", firstName: profileFirstName, ...openGraphBase }
+      : { type: "website", ...openGraphBase },
     twitter: {
       card: image ? "summary" : "summary_large_image",
       title: shareTitle,
