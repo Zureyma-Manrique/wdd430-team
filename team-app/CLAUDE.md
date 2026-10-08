@@ -101,8 +101,12 @@ Add enum values to the `as const` tuples in `lib/types`. Zod schemas derive from
   (or returns it from `generateMetadata`). Next merges metadata *shallowly*, so a hand-written
   `openGraph` object would drop the layout's `siteName`, `locale` and share image; the helper
   rebuilds all of them (the image defaults to `app/opengraph-image.tsx`).
-  Pass `private: true` for signed-in and sign-in/sign-up pages (`noindex`), and add new private
-  routes to `app/robots.ts`. Descriptions are trimmed to 160 characters.
+  Pass `private: true` for signed-in and sign-in/sign-up pages (`noindex`). Signed-in routes
+  also go in `app/robots.ts` (`Disallow`) and in `proxy.ts`'s `matcher`; keep the two lists in
+  sync. Never `Disallow` a page you rely on `noindex` for (a crawler that obeys `Disallow` never
+  reads the tag), so sign-in/sign-up stay out of `robots.ts`. Descriptions are trimmed to 160
+  code points. `not-found.tsx` has its own title. The site origin comes from `SITE_URL` (then
+  Vercel's domain, then localhost with a warning).
 
 ## Visual design system
 
