@@ -41,7 +41,7 @@ export default async function DogsPage() {
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {dogs.map((dog) => (
             <li key={dog.id}>
-              <DogProfileCard dog={dog} editHref={`/dogs/${dog.id}`} />
+              <DogProfileCard dog={dog} editHref={`/dogs/${dog.id}`} headingLevel="h2" />
             </li>
           ))}
         </ul>

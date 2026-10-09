@@ -7,10 +7,12 @@ interface DogProfileCardProps {
   dog: DogProfile;
   /** When set, the card ends with an "Edit" link to this address (the owner's own list). */
   editHref?: string;
+  /** Heading level for the dog's name: `h3` under a section heading, `h2` directly under the page's `h1`. */
+  headingLevel?: "h2" | "h3";
 }
 
 /** Dog ("pet") card: name, breed, size, photo placeholder, and care notes (story B1). */
-export function DogProfileCard({ dog, editHref }: DogProfileCardProps) {
+export function DogProfileCard({ dog, editHref, headingLevel: Heading = "h3" }: DogProfileCardProps) {
   const headingId = `dog-${dog.id}-name`;
 
   return (
@@ -23,9 +25,9 @@ export function DogProfileCard({ dog, editHref }: DogProfileCardProps) {
           {initials(dog.name)}
         </span>
         <div className="min-w-0">
-          <h3 id={headingId} className="truncate text-lg font-semibold text-foreground">
+          <Heading id={headingId} className="truncate text-lg font-semibold text-foreground">
             {dog.name}
-          </h3>
+          </Heading>
           <p className="text-sm text-muted">{dog.breed ?? "Breed not set"}</p>
         </div>
         <span className="ml-auto rounded-full bg-surface-muted px-2.5 py-1 text-xs font-medium text-foreground">

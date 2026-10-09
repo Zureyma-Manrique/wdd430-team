@@ -16,8 +16,8 @@ export const contentType = "image/png";
 const TOKENS = {
   background: "#fbfaf7", // --background
   foreground: "#1c2421", // --foreground
-  muted: "#56615c", // --muted
-  primary: "#2f6b4f", // --primary
+  muted: "#444d49", // --muted
+  primary: "#25543e", // --primary
   primaryForeground: "#ffffff", // --primary-foreground
   accentSoft: "#fdf1dc", // --accent-soft
 } as const;

@@ -513,7 +513,8 @@ All technical choices follow the [constitution](../../.specify/memory/constituti
 - **NFR-004 Responsiveness**: every page is usable at 360 px width and up.
 - **NFR-005 Metadata & discoverability**: every page has a unique title and a description of at
   most 160 characters, a canonical URL, and Open Graph/Twitter tags (a default share image, or the
-  walker's photo on a walker profile). Signed-in and sign-in/sign-up pages send `noindex`.
+  walker's photo on a walker profile). Signed-in pages send `noindex`; the public sign-in and
+  sign-up pages stay indexable.
   `/robots.txt` blocks `/api/` and signed-in pages, and `/sitemap.xml` lists the public pages and
   every searchable walker.
 
