@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { SelectField, TextAreaField, TextField } from "@/components/ui/form-field";
+import { textLinkClasses } from "@/components/ui/styles";
 import { WALK_DURATIONS_MINUTES, type DogProfile } from "@/lib/types";
 import { walkCreateSchema, type WalkCreateInput } from "@/lib/validation/walk";
 
@@ -136,7 +138,14 @@ export function BookingForm({ walkerId, walkerName, dogs }: BookingFormProps) {
   }
 
   if (dogs.length === 0) {
-    return <p className="text-sm text-muted">Add a dog to your profile before booking a walk.</p>;
+    return (
+      <p className="text-sm text-muted">
+        <Link href="/dogs/new" className={textLinkClasses}>
+          Add a dog
+        </Link>{" "}
+        to your profile before booking a walk.
+      </p>
+    );
   }
 
   if (stage.kind === "reviewing") {

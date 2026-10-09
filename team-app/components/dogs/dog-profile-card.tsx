@@ -1,12 +1,16 @@
 import type { DogProfile } from "@/lib/types";
+import { buttonClasses } from "@/components/ui/button";
 import { formatDogSize, initials } from "@/lib/format";
+import Link from "next/link";
 
 interface DogProfileCardProps {
   dog: DogProfile;
+  /** When set, the card ends with an "Edit" link to this address (the owner's own list). */
+  editHref?: string;
 }
 
 /** Dog ("pet") card: name, breed, size, photo placeholder, and care notes (story B1). */
-export function DogProfileCard({ dog }: DogProfileCardProps) {
+export function DogProfileCard({ dog, editHref }: DogProfileCardProps) {
   const headingId = `dog-${dog.id}-name`;
 
   return (
@@ -33,6 +37,12 @@ export function DogProfileCard({ dog }: DogProfileCardProps) {
         <p className="rounded-lg bg-surface-muted px-3 py-2 text-sm text-foreground">
           <span className="font-medium">Care notes:</span> {dog.notes}
         </p>
+      ) : null}
+
+      {editHref ? (
+        <Link href={editHref} className={buttonClasses("secondary", "self-start")} aria-label={`Edit ${dog.name}`}>
+          Edit
+        </Link>
       ) : null}
     </article>
   );

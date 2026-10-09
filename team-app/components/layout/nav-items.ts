@@ -4,3 +4,6 @@ export const PRIMARY_NAV = [
   { href: "/walkers", label: "Find a walker" },
   { href: "/dashboard", label: "Dashboard" },
 ] as const;
+
+/** Extra link for owners only (story B1). A walker has no dogs to manage. */
+export const OWNER_NAV = [{ href: "/dogs", label: "My dogs" }] as const;

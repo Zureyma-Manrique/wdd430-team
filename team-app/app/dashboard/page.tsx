@@ -82,9 +82,14 @@ export default async function DashboardPage() {
             <h2 id="dogs-heading" className="text-xl font-semibold text-foreground">
               Your dogs
             </h2>
-            <ButtonLink href="/walkers" variant="secondary">
-              Book a walk
-            </ButtonLink>
+            <div className="flex flex-wrap gap-2">
+              <ButtonLink href="/dogs" variant="ghost">
+                Manage dogs
+              </ButtonLink>
+              <ButtonLink href="/walkers" variant="secondary">
+                Book a walk
+              </ButtonLink>
+            </div>
           </div>
           {dogs.length > 0 ? (
             <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -95,7 +100,13 @@ export default async function DashboardPage() {
               ))}
             </ul>
           ) : (
-            <p className="text-muted">You haven&apos;t added any dogs yet.</p>
+            <div className="rounded-xl border border-dashed border-border bg-surface px-6 py-8 text-center">
+              <p className="font-semibold text-foreground">You haven&apos;t added any dogs yet</p>
+              <p className="mt-1 text-sm text-muted">Add a dog so walkers know who they&apos;re walking.</p>
+              <ButtonLink href="/dogs/new" className="mt-4">
+                Add a dog
+              </ButtonLink>
+            </div>
           )}
         </section>
       ) : (
