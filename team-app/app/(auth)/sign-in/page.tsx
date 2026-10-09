@@ -11,7 +11,6 @@ export const metadata: Metadata = pageMetadata({
   title: "Sign in",
   description: "Sign in to Paws & Paths to manage your dogs, book walks, or answer walk requests.",
   path: "/sign-in",
-  private: true,
 });
 
 export default async function SignInPage({ searchParams }: PageProps<"/sign-in">) {

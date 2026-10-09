@@ -22,20 +22,14 @@ export async function Footer() {
           <ul className="flex flex-col gap-1 sm:flex-row sm:gap-4">
             {PRIMARY_NAV.map(({ href, label }) => (
               <li key={href}>
-                <Link
-                  href={href}
-                  className={footerLinkClasses}
-                >
+                <Link href={href} className={footerLinkClasses}>
                   {label}
                 </Link>
               </li>
             ))}
             {session ? null : (
               <li>
-                <Link
-                  href="/sign-in"
-                  className={footerLinkClasses}
-                >
+                <Link href="/sign-in" className={footerLinkClasses}>
                   Sign in
                 </Link>
               </li>

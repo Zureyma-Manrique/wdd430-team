@@ -20,11 +20,11 @@ Cite requirement IDs (for example `FR-023` or story `C2`) in comments where code
 | Language | TypeScript 5, `strict: true`. **No `any`** (ESLint error). Use `unknown` + narrowing. |
 | Styling | Tailwind CSS v4 utilities only. Tokens live in `app/globals.css` (`@theme inline`). |
 | Validation | Zod 4 (`z.email()`, `z.iso.datetime()`, `{ error: "..." }`, `z.flattenError`). |
-| Data (planned) | PostgreSQL 16 + Prisma. Until then: in-memory seed data in `lib/data/seed.ts`. |
-| Auth | Auth.js v5 (`next-auth@beta`) with a Credentials provider and bcrypt (`bcryptjs`) password hashes. JWT sessions and an in-memory user store (`lib/data/users.ts`) until Prisma lands; then switch to the Prisma adapter with database sessions and add Google (FR-001). |
+| Data | PostgreSQL 16 + Prisma 7 (`prisma/schema.prisma`, migrations in `prisma/migrations`). `lib/db.ts` is the one Prisma client, and only `lib/data/*` imports it. Demo data: `prisma/seed.ts`. |
+| Auth | Auth.js v5 (`next-auth@beta`) with a Credentials provider and bcrypt (`bcryptjs`) password hashes. JWT sessions (Auth.js supports the Credentials provider only with JWT) and accounts in Postgres (`lib/data/users.ts`); `getSession()` re-reads the account on every request. Google sign-in is still to do (FR-001, issue #32). |
 | Testing (planned) | Vitest + React Testing Library, Playwright E2E. Do not add Jest or Cypress. |
 
-Commands (run inside `team-app/`): `npm run dev`, `npm run build`, `npm run lint`, `npx tsc --noEmit`.
+Commands (run inside `team-app/`): `npm run dev`, `npm run build`, `npm run lint`, `npm run typecheck`, `npm run format:check`, and for the database `npm run db:migrate` (development), `db:deploy`, `db:seed`.
 
 ## Directory layout
 
@@ -33,6 +33,8 @@ app/                         Routes (App Router). Server Components by default.
   (auth)/sign-in/            Sign-in page (/login redirects here via next.config.ts)
   (auth)/sign-up/            Sign-up page with Owner/Walker role choice (story A1)
   dashboard/                 Protected role dashboard
+  dogs/                      Owner's dogs: (list)/ page + loading, new/, [id]/ (edit, remove), error.tsx (stories B1, B2)
+  walks/                     My walks (owner: booked; walker: assigned) with loading and error states (stories C2 to C5)
   profile/                   Profile editor for walkers and owners (story A3)
   walkers/(directory)/       Walker directory + its loading.tsx (route group, see note below)
   walkers/[id]/              Public walker profile & booking
@@ -41,23 +43,29 @@ app/                         Routes (App Router). Server Components by default.
   api/auth/[...nextauth]/    Auth.js endpoints; api/auth/register/ creates credentials accounts
   api/walkers/me/            GET/PATCH my walker profile; api/walkers/[id]/ is the public profile
   api/owners/me/             GET/PATCH my owner profile (name, phone, postal code)
+  api/dogs/ api/dogs/[id]/   Dog CRUD; DELETE archives (409 while the dog has an active walk)
+  api/walks/ api/walks/[id]/status/   Request, list, and change the status of walks (FR-020 to FR-025)
 proxy.ts                     Redirects signed-out visitors on /dashboard, /dogs, /walks, /profile to /sign-in
 components/
   ui/                        Primitives: button.tsx, form-field.tsx, form-notice.tsx (client), styles.ts (focusRing, focusWithinRing, textLinkClasses)
   layout/                    header.tsx, footer.tsx, nav-links.tsx (client), nav-items.ts
   walkers/                   walker-card, rating-badge, filter-bar (client), booking-form (client)
-  dogs/                      dog-profile-card
+  dogs/                      dog-profile-card, dog-form (client), archive-dog-button (client)
+  walks/                     walk-card, walk-status-badge, walk-actions (client), local-date-time (client)
   auth/                      sign-in-form, sign-up-form (client)
   profile/                   walker-profile-form, owner-profile-form (client)
 lib/
   types/index.ts             Domain types + enum tuples (USER_ROLES, DOG_SIZES, WALK_BOOKING_STATUSES)
   validation/*.ts            Zod schemas shared by Route Handlers and client forms
-  data/*.ts                  Server-only data access (`import "server-only"`)
+  db.ts                      The Prisma client (server-only; created lazily, so `next build` needs no database)
+  data/*.ts                  Server-only data access: typed Prisma queries; mappers.ts turns rows into domain types
+  walks/transitions.ts       The FR-023 status table (who may do what, from which status); dates.ts for time-zone filters
   auth/session.ts            getSession(): the only way to read the current user
   auth/auth.ts               Auth.js setup (handlers, auth, signIn, signOut); server-only
   auth/config.ts             Shared Auth.js config, safe for proxy.ts (no user store, no bcrypt)
   auth/actions.ts            signOutAction Server Action
   api/http.ts                apiError(), readJsonBody() (server-only)
+  api/guards.ts              requireRole(), requireSignedIn(): the 401 then 403 checks every Route Handler starts with
   api/error-body.ts          readApiError(), firstFieldErrors(): client-safe reader for spec §6 error bodies
   format.ts                  Display formatters
   metadata.ts                pageMetadata(), SITE_NAME/SITE_URL: shared page metadata (NFR-005)
@@ -101,10 +109,10 @@ Add enum values to the `as const` tuples in `lib/types`. Zod schemas derive from
   (or returns it from `generateMetadata`). Next merges metadata *shallowly*, so a hand-written
   `openGraph` object would drop the layout's `siteName`, `locale` and share image; the helper
   rebuilds all of them (the image defaults to `app/opengraph-image.tsx`).
-  Pass `private: true` for signed-in and sign-in/sign-up pages (`noindex`). Signed-in routes
-  also go in `app/robots.ts` (`Disallow`) and in `proxy.ts`'s `matcher`; keep the two lists in
-  sync. Never `Disallow` a page you rely on `noindex` for (a crawler that obeys `Disallow` never
-  reads the tag), so sign-in/sign-up stay out of `robots.ts`. Descriptions are trimmed to 160
+  Pass `private: true` for signed-in pages (`noindex`); the public sign-in/sign-up pages stay
+  indexable (a `noindex` fails Lighthouse's SEO audit). Signed-in routes also go in
+  `app/robots.ts` (`Disallow`) and in `proxy.ts`'s `matcher`; keep the two lists in sync. Never
+  `Disallow` a page you rely on `noindex` for (a crawler that obeys `Disallow` never reads the tag). Descriptions are trimmed to 160
   code points. `not-found.tsx` has its own title. The site origin comes from `SITE_URL` (then
   Vercel's domain, then localhost with a warning).
 
@@ -131,7 +139,7 @@ arbitrary color values in components.** If you need a new color, add a token. (O
   `py-10`/`py-16`, stacks with `gap-4`/`gap-8`. Cards use `rounded-xl border border-border bg-surface p-5 shadow-sm`.
   Controls use `rounded-lg`.
 - **Mobile first:** base styles target 360px. Add `sm:`, `md:`, `lg:` upward.
-- **Accessibility (WCAG 2.1 AA):** every text pair ≥ 4.5:1. Interactive targets `min-h-11` (44px).
+- **Accessibility (WCAG 2.1 AA, with AAA contrast):** every text pair ≥ 7:1 (the course checks AA and AAA). Interactive targets `min-h-11` (44px).
   Visible focus via the shared `focusRing` constant (`components/ui/styles.ts`), or `focusWithinRing` on a
   `<label>` that wraps a radio or checkbox; never re-type the classes.
   When a multi-step UI swaps content, move focus to the new heading or status (see `booking-form.tsx`).

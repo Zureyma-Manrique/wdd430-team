@@ -10,7 +10,6 @@ export const metadata: Metadata = pageMetadata({
   title: "Sign up",
   description: "Create a free Paws & Paths account as a dog owner or as a dog walker.",
   path: "/sign-up",
-  private: true,
 });
 
 export default async function SignUpPage() {

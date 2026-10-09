@@ -1,45 +1,59 @@
 import "server-only";
+import type { Prisma } from "@/generated/prisma/client";
+import { db } from "@/lib/db";
 import type { PublicWalkerProfile, PublicWalkerReview, Walker, WalkerSummary } from "@/lib/types";
 import type { WalkerProfileUpdateInput, WalkerSearchParams } from "@/lib/validation";
-import { seedReviews, seedWalkers } from "./seed";
+import { isNotFound } from "./errors";
+import { toWalker } from "./mappers";
 
 /*
- * Walker queries. These take already-validated, typed arguments and filter with plain
- * comparisons, never string-built queries. When Prisma replaces the seed data, keep that
- * rule: pass values through Prisma's `where` objects and use `$queryRaw` tagged templates
- * (never `$queryRawUnsafe`) for any raw SQL.
+ * Walker queries. They take already-validated, typed arguments and pass them to Prisma's `where`
+ * objects, so values are always bound as parameters. For raw SQL use `$queryRaw` tagged
+ * templates, never `$queryRawUnsafe` (CLAUDE.md, security rule 5).
  */
 
-// In-memory until Prisma lands (feature/data-model). Kept on globalThis so dev hot reloads keep
-// profile edits, like the user store in `users.ts`.
-const store = globalThis as typeof globalThis & { __pawsWalkers?: Map<string, Walker> };
-const walkersById = (store.__pawsWalkers ??= new Map(seedWalkers.map((walker) => [walker.id, { ...walker }])));
+/** FR-041: only active walkers with a rate and at least one service area appear in search. */
+const searchableWhere = {
+  isActive: true,
+  hourlyRate: { not: null },
+  serviceAreaPostalCodes: { isEmpty: false },
+} satisfies Prisma.WalkerWhereInput;
 
-function isSearchable(walker: Walker): boolean {
-  return walker.isActive && walker.hourlyRate !== null && walker.serviceAreaPostalCodes.length > 0;
+/** Average rating and review count per walker, in one grouped query. */
+async function ratingsFor(walkerIds: string[]): Promise<Map<string, { average: number | null; count: number }>> {
+  if (walkerIds.length === 0) return new Map();
+  const groups = await db().walkerReview.groupBy({
+    by: ["walkerId"],
+    where: { walkerId: { in: walkerIds } },
+    _avg: { rating: true },
+    _count: { _all: true },
+  });
+  return new Map(groups.map((group) => [group.walkerId, { average: group._avg.rating, count: group._count._all }]));
 }
 
-function withRatings(walker: Walker): WalkerSummary {
-  const reviews = seedReviews.filter((review) => review.walkerId === walker.id);
-  const total = reviews.reduce((sum, review) => sum + review.rating, 0);
-  return {
-    ...walker,
-    averageRating: reviews.length > 0 ? total / reviews.length : null,
-    reviewCount: reviews.length,
-  };
+async function withRatings(rows: Parameters<typeof toWalker>[0][]): Promise<WalkerSummary[]> {
+  const ratings = await ratingsFor(rows.map((row) => row.id));
+  return rows.map((row) => {
+    const rating = ratings.get(row.id);
+    return { ...toWalker(row), averageRating: rating?.average ?? null, reviewCount: rating?.count ?? 0 };
+  });
 }
 
 /** FR-041: active walkers with a complete profile, filtered and sorted. */
 export async function searchWalkers(filters: WalkerSearchParams): Promise<WalkerSummary[]> {
-  const results = [...walkersById.values()]
-    .filter(isSearchable)
-    .filter((walker) => !filters.postalCode || walker.serviceAreaPostalCodes.includes(filters.postalCode))
-    .map(withRatings)
-    .filter(
-      (walker) =>
-        filters.minRating === undefined ||
-        (walker.averageRating !== null && walker.averageRating >= filters.minRating),
-    );
+  const rows = await db().walker.findMany({
+    where: {
+      ...searchableWhere,
+      // Prisma list filters take exactly one operator. A list that has the code isn't empty, so
+      // `has` alone keeps the "at least one service area" rule from `searchableWhere`.
+      ...(filters.postalCode ? { serviceAreaPostalCodes: { has: filters.postalCode } } : {}),
+    },
+  });
+
+  const { minRating } = filters;
+  const results = (await withRatings(rows)).filter(
+    (walker) => minRating === undefined || (walker.averageRating !== null && walker.averageRating >= minRating),
+  );
 
   if (filters.sort === "price") {
     return results.sort((a, b) => (a.hourlyRate ?? 0) - (b.hourlyRate ?? 0));
@@ -50,8 +64,10 @@ export async function searchWalkers(filters: WalkerSearchParams): Promise<Walker
 
 /** Public profile. Inactive or incomplete walkers resolve to `null` (rendered as 404). */
 export async function getWalkerById(id: string): Promise<WalkerSummary | null> {
-  const walker = walkersById.get(id);
-  return walker && isSearchable(walker) ? withRatings(walker) : null;
+  const row = await db().walker.findFirst({ where: { id, ...searchableWhere } });
+  if (!row) return null;
+  const [summary] = await withRatings([row]);
+  return summary ?? null;
 }
 
 /** Public shape of a searchable walker (FR-040): no account id or internal flags. */
@@ -65,21 +81,8 @@ export function toPublicWalkerProfile(walker: WalkerSummary): PublicWalkerProfil
  * the session, never from the request.
  */
 export async function getOwnWalkerProfile(walkerId: string): Promise<Walker | null> {
-  return walkersById.get(walkerId) ?? null;
-}
-
-/** Empty profile for a new walker account (FR-002). No rate or service area, so not searchable yet. */
-export async function createWalkerProfile(input: { id: string; userId: string; displayName: string }): Promise<Walker> {
-  const walker: Walker = {
-    ...input,
-    bio: null,
-    serviceAreaPostalCodes: [],
-    hourlyRate: null,
-    photoUrl: null,
-    isActive: true,
-  };
-  walkersById.set(walker.id, walker);
-  return walker;
+  const row = await db().walker.findUnique({ where: { id: walkerId } });
+  return row ? toWalker(row) : null;
 }
 
 /**
@@ -87,21 +90,24 @@ export async function createWalkerProfile(input: { id: string; userId: string; d
  * Returns `null` when the profile doesn't exist.
  */
 export async function updateWalkerProfile(walkerId: string, input: WalkerProfileUpdateInput): Promise<Walker | null> {
-  const current = walkersById.get(walkerId);
-  if (!current) return null;
-
-  const updated: Walker = {
-    ...current,
-    ...(input.bio !== undefined ? { bio: input.bio } : {}),
-    ...(input.serviceAreaPostalCodes !== undefined ? { serviceAreaPostalCodes: input.serviceAreaPostalCodes } : {}),
-    ...(input.hourlyRate !== undefined ? { hourlyRate: input.hourlyRate } : {}),
-    ...(input.photoUrl !== undefined ? { photoUrl: input.photoUrl } : {}),
-    // TODO(feature/schedule-api): setting isActive to false must also cancel upcoming walks
-    // (spec §6 PATCH /api/walkers/me and the "walker deactivates" edge case; cancel flow is issue #12, story C5).
-    ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
-  };
-  walkersById.set(walkerId, updated);
-  return updated;
+  try {
+    // TODO: setting isActive to false must also cancel upcoming walks (spec §6 PATCH
+    // /api/walkers/me and the "walker deactivates" edge case). Tracked in issue #35.
+    const row = await db().walker.update({
+      where: { id: walkerId },
+      data: {
+        bio: input.bio,
+        serviceAreaPostalCodes: input.serviceAreaPostalCodes,
+        hourlyRate: input.hourlyRate,
+        photoUrl: input.photoUrl,
+        isActive: input.isActive,
+      },
+    });
+    return toWalker(row);
+  } catch (error) {
+    if (isNotFound(error)) return null;
+    throw error;
+  }
 }
 
 /** FR-034: newest first. `limit` is capped by the caller's validated query. */
@@ -109,8 +115,33 @@ export async function getWalkerReviews(
   walkerId: string,
   limit: number,
 ): Promise<{ reviews: PublicWalkerReview[]; total: number }> {
-  const all = seedReviews
-    .filter((review) => review.walkerId === walkerId)
-    .toSorted((a, b) => b.createdAt.localeCompare(a.createdAt));
-  return { reviews: all.slice(0, limit), total: all.length };
+  const where = { walkerId } satisfies Prisma.WalkerReviewWhereInput;
+  const [rows, total] = await Promise.all([
+    db().walkerReview.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      include: {
+        author: { select: { name: true } },
+        walk: { select: { dog: { select: { name: true } } } },
+      },
+    }),
+    db().walkerReview.count({ where }),
+  ]);
+
+  const reviews = rows.map((row) => ({
+    id: row.id,
+    walkId: row.walkId,
+    walkerId: row.walkerId,
+    authorId: row.authorId,
+    // Only the first name is public (spec D2).
+    authorFirstName: row.author.name.split(/\s+/)[0] ?? row.author.name,
+    dogName: row.walk.dog.name,
+    rating: row.rating,
+    comment: row.comment,
+    walkerReply: row.walkerReply,
+    createdAt: row.createdAt.toISOString(),
+    editedAt: row.editedAt ? row.editedAt.toISOString() : null,
+  }));
+  return { reviews, total };
 }

@@ -16,7 +16,11 @@ export const phoneSchema = z
 // PATCH /api/owners/me (story A3). `null` clears phone or postal code.
 export const ownerProfileUpdateSchema = z
   .strictObject({
-    name: z.string().trim().min(1, { error: "Enter your name" }).max(80, { error: "Name must be 80 characters or fewer" }),
+    name: z
+      .string()
+      .trim()
+      .min(1, { error: "Enter your name" })
+      .max(80, { error: "Name must be 80 characters or fewer" }),
     phone: phoneSchema.nullable(),
     postalCode: postalCodeSchema.nullable(),
   })

@@ -21,7 +21,9 @@ export interface ApiErrorResult {
 const FALLBACK_MESSAGE = "Something went wrong. Please try again.";
 
 /** Keeps the first message per field, from `z.flattenError(...).fieldErrors` or an API body. */
-export function firstFieldErrors(fieldErrors: Record<string, string[] | undefined>): Record<string, string | undefined> {
+export function firstFieldErrors(
+  fieldErrors: Record<string, string[] | undefined>,
+): Record<string, string | undefined> {
   return Object.fromEntries(Object.entries(fieldErrors).map(([field, messages]) => [field, messages?.[0]]));
 }
 
@@ -31,5 +33,8 @@ export async function readApiError(response: Response): Promise<ApiErrorResult> 
   if (!parsed.success) {
     return { message: FALLBACK_MESSAGE, fieldErrors: {} };
   }
-  return { message: parsed.data.error.message, fieldErrors: firstFieldErrors(parsed.data.error.details?.fieldErrors ?? {}) };
+  return {
+    message: parsed.data.error.message,
+    fieldErrors: firstFieldErrors(parsed.data.error.details?.fieldErrors ?? {}),
+  };
 }

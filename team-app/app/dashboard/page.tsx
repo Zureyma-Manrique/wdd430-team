@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { DogProfileCard } from "@/components/dogs/dog-profile-card";
 import { ButtonLink } from "@/components/ui/button";
+import { WalkCard } from "@/components/walks/walk-card";
 import { getSession } from "@/lib/auth/session";
 import { getDogsForOwner } from "@/lib/data/dogs";
+import { getUpcomingWalks } from "@/lib/data/walks";
 import { getOwnWalkerProfile } from "@/lib/data/walkers";
 import { pageMetadata } from "@/lib/metadata";
 
@@ -23,6 +25,8 @@ export default async function DashboardPage() {
 
   // Data is always scoped to the session's own profile id, never an id from the URL.
   const dogs = session.role === "OWNER" ? await getDogsForOwner(session.profileId) : [];
+  const upcomingWalks = await getUpcomingWalks(session, 3);
+  const now = new Date();
   // Two different reasons a walker is missing from search (FR-041): the profile still needs a
   // rate and service area (story A1, scenario 2), or the walker turned off "Accepting new walks".
   const ownWalker = session.role === "WALKER" ? await getOwnWalkerProfile(session.profileId) : null;
@@ -65,7 +69,10 @@ export default async function DashboardPage() {
       ) : null}
 
       {walkerPaused ? (
-        <section aria-labelledby="paused-profile-heading" className="rounded-xl border border-border bg-surface-muted p-6">
+        <section
+          aria-labelledby="paused-profile-heading"
+          className="rounded-xl border border-border bg-surface-muted p-6"
+        >
           <h2 id="paused-profile-heading" className="text-xl font-semibold text-foreground">
             You&apos;re hidden from search
           </h2>
@@ -82,9 +89,14 @@ export default async function DashboardPage() {
             <h2 id="dogs-heading" className="text-xl font-semibold text-foreground">
               Your dogs
             </h2>
-            <ButtonLink href="/walkers" variant="secondary">
-              Book a walk
-            </ButtonLink>
+            <div className="flex flex-wrap gap-2">
+              <ButtonLink href="/dogs" variant="ghost">
+                Manage dogs
+              </ButtonLink>
+              <ButtonLink href="/walkers" variant="secondary">
+                Book a walk
+              </ButtonLink>
+            </div>
           </div>
           {dogs.length > 0 ? (
             <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -95,19 +107,42 @@ export default async function DashboardPage() {
               ))}
             </ul>
           ) : (
-            <p className="text-muted">You haven&apos;t added any dogs yet.</p>
+            <div className="rounded-xl border border-dashed border-border bg-surface px-6 py-8 text-center">
+              <p className="font-semibold text-foreground">You haven&apos;t added any dogs yet</p>
+              <p className="mt-1 text-sm text-muted">Add a dog so walkers know who they&apos;re walking.</p>
+              <ButtonLink href="/dogs/new" className="mt-4">
+                Add a dog
+              </ButtonLink>
+            </div>
           )}
         </section>
-      ) : (
-        <section aria-labelledby="requests-heading" className="rounded-xl border border-dashed border-border bg-surface p-6">
-          <h2 id="requests-heading" className="text-xl font-semibold text-foreground">
-            Walk requests
+      ) : null}
+
+      <section aria-labelledby="walks-heading" className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 id="walks-heading" className="text-xl font-semibold text-foreground">
+            {session.role === "OWNER" ? "Upcoming walks" : "Walk requests and upcoming walks"}
           </h2>
-          <p className="mt-2 text-muted">
-            Incoming requests and today&apos;s walks will appear here once scheduling ships (feature/schedule-api).
+          <ButtonLink href="/walks" variant="ghost">
+            See all walks
+          </ButtonLink>
+        </div>
+        {upcomingWalks.length > 0 ? (
+          <ul className="grid gap-4 md:grid-cols-2">
+            {upcomingWalks.map((walk) => (
+              <li key={walk.id}>
+                <WalkCard walk={walk} viewerRole={session.role} now={now} />
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="rounded-xl border border-dashed border-border bg-surface px-6 py-8 text-center text-sm text-muted">
+            {session.role === "OWNER"
+              ? "No upcoming walks. Find a walker and request a time."
+              : "No requests yet. Owners can book you once your profile is complete."}
           </p>
-        </section>
-      )}
+        )}
+      </section>
     </div>
   );
 }
