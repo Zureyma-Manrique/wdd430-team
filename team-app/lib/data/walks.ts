@@ -40,7 +40,11 @@ function toWalkSummary(row: WalkRow): WalkSummary {
     sessionNotes: row.sessionNotes,
     cancellation:
       row.cancelledAt && row.cancelledByUserId
-        ? { cancelledByUserId: row.cancelledByUserId, reason: row.cancellationReason, cancelledAt: row.cancelledAt.toISOString() }
+        ? {
+            cancelledByUserId: row.cancelledByUserId,
+            reason: row.cancellationReason,
+            cancelledAt: row.cancelledAt.toISOString(),
+          }
         : null,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
@@ -132,7 +136,9 @@ export async function getPastWalks(actor: Actor, limit: number): Promise<WalkSum
   const rows = await db().walkBooking.findMany({
     where: {
       ...actorWhere(actor),
-      NOT: { OR: [{ status: "IN_PROGRESS" }, { status: { in: ["PENDING", "CONFIRMED"] }, endAt: { gte: new Date() } }] },
+      NOT: {
+        OR: [{ status: "IN_PROGRESS" }, { status: { in: ["PENDING", "CONFIRMED"] }, endAt: { gte: new Date() } }],
+      },
     },
     orderBy: { startAt: "desc" },
     take: limit,
@@ -142,8 +148,7 @@ export async function getPastWalks(actor: Actor, limit: number): Promise<WalkSum
 }
 
 export type ChangeWalkStatusResult =
-  | { ok: true; walk: WalkSummary }
-  | { ok: false; reason: "NOT_FOUND" | "FORBIDDEN" | "CONFLICT" | "TOO_EARLY" };
+  { ok: true; walk: WalkSummary } | { ok: false; reason: "NOT_FOUND" | "FORBIDDEN" | "CONFLICT" | "TOO_EARLY" };
 
 /**
  * FR-023: applies one status change. Only the walk's owner or walker can touch it (`404`
@@ -162,7 +167,10 @@ export async function changeWalkStatus(
 
   const check = checkTransition(change.action, walk, actor.role, now);
   if (!check.ok) {
-    return { ok: false, reason: check.reason === "WRONG_ROLE" ? "FORBIDDEN" : check.reason === "TOO_EARLY" ? "TOO_EARLY" : "CONFLICT" };
+    return {
+      ok: false,
+      reason: check.reason === "WRONG_ROLE" ? "FORBIDDEN" : check.reason === "TOO_EARLY" ? "TOO_EARLY" : "CONFLICT",
+    };
   }
 
   const { count } = await db().walkBooking.updateMany({

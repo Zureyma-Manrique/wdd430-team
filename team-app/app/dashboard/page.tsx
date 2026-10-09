@@ -69,7 +69,10 @@ export default async function DashboardPage() {
       ) : null}
 
       {walkerPaused ? (
-        <section aria-labelledby="paused-profile-heading" className="rounded-xl border border-border bg-surface-muted p-6">
+        <section
+          aria-labelledby="paused-profile-heading"
+          className="rounded-xl border border-border bg-surface-muted p-6"
+        >
           <h2 id="paused-profile-heading" className="text-xl font-semibold text-foreground">
             You&apos;re hidden from search
           </h2>

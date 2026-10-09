@@ -42,7 +42,10 @@ export default async function EditDogPage({ params }: PageProps<"/dogs/[id]">) {
         <DogForm dog={dog} />
       </div>
 
-      <section aria-labelledby="remove-heading" className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-6">
+      <section
+        aria-labelledby="remove-heading"
+        className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-6"
+      >
         <h2 id="remove-heading" className="text-xl font-semibold text-foreground">
           Remove this dog
         </h2>

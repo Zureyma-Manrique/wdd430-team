@@ -24,64 +24,58 @@ const TOKENS = {
 
 export default function OpenGraphImage() {
   return new ImageResponse(
-    (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
-          padding: 80,
-          background: TOKENS.background,
-          borderTop: `24px solid ${TOKENS.primary}`,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-          <div
-            style={{
-              width: 88,
-              height: 88,
-              borderRadius: 44,
-              background: TOKENS.primary,
-              color: TOKENS.primaryForeground,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 40,
-              fontWeight: 700,
-            }}
-          >
-            P&amp;P
-          </div>
-          <div style={{ fontSize: 48, fontWeight: 700, color: TOKENS.foreground }}>{SITE_NAME}</div>
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        padding: 80,
+        background: TOKENS.background,
+        borderTop: `24px solid ${TOKENS.primary}`,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+        <div
+          style={{
+            width: 88,
+            height: 88,
+            borderRadius: 44,
+            background: TOKENS.primary,
+            color: TOKENS.primaryForeground,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 40,
+            fontWeight: 700,
+          }}
+        >
+          P&amp;P
         </div>
+        <div style={{ fontSize: 48, fontWeight: 700, color: TOKENS.foreground }}>{SITE_NAME}</div>
+      </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          <div style={{ fontSize: 76, fontWeight: 700, color: TOKENS.foreground, lineHeight: 1.1 }}>
-            {SITE_TAGLINE}
-          </div>
-          <div style={{ fontSize: 34, color: TOKENS.muted }}>
-            Find a walker nearby, book a walk, and follow it live.
-          </div>
-        </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        <div style={{ fontSize: 76, fontWeight: 700, color: TOKENS.foreground, lineHeight: 1.1 }}>{SITE_TAGLINE}</div>
+        <div style={{ fontSize: 34, color: TOKENS.muted }}>Find a walker nearby, book a walk, and follow it live.</div>
+      </div>
 
-        <div style={{ display: "flex" }}>
-          <div
-            style={{
-              display: "flex",
-              padding: "12px 28px",
-              borderRadius: 999,
-              background: TOKENS.accentSoft,
-              color: TOKENS.foreground,
-              fontSize: 28,
-            }}
-          >
-            Reviews only from completed walks
-          </div>
+      <div style={{ display: "flex" }}>
+        <div
+          style={{
+            display: "flex",
+            padding: "12px 28px",
+            borderRadius: 999,
+            background: TOKENS.accentSoft,
+            color: TOKENS.foreground,
+            fontSize: 28,
+          }}
+        >
+          Reviews only from completed walks
         </div>
       </div>
-    ),
+    </div>,
     size,
   );
 }

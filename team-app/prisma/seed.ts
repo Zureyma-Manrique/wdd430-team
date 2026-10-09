@@ -178,7 +178,17 @@ const owners: SeedOwner[] = [
     name: "Lee",
     phone: null,
     postalCode: "84604",
-    dogs: [{ id: "d_pepper", name: "Pepper", breed: "Terrier mix", size: "SMALL", birthDate: null, weightKg: 7, notes: null }],
+    dogs: [
+      {
+        id: "d_pepper",
+        name: "Pepper",
+        breed: "Terrier mix",
+        size: "SMALL",
+        birthDate: null,
+        weightKg: 7,
+        notes: null,
+      },
+    ],
   },
   {
     id: "o_pat",
@@ -187,7 +197,17 @@ const owners: SeedOwner[] = [
     name: "Pat",
     phone: null,
     postalCode: "84602",
-    dogs: [{ id: "d_noodle", name: "Noodle", breed: "Dachshund", size: "SMALL", birthDate: null, weightKg: 8, notes: "13 years old." }],
+    dogs: [
+      {
+        id: "d_noodle",
+        name: "Noodle",
+        breed: "Dachshund",
+        size: "SMALL",
+        birthDate: null,
+        weightKg: 8,
+        notes: "13 years old.",
+      },
+    ],
   },
   {
     id: "o_sky",
@@ -196,7 +216,9 @@ const owners: SeedOwner[] = [
     name: "Sky",
     phone: null,
     postalCode: "84601",
-    dogs: [{ id: "d_ranger", name: "Ranger", breed: "Labrador", size: "LARGE", birthDate: null, weightKg: 30, notes: null }],
+    dogs: [
+      { id: "d_ranger", name: "Ranger", breed: "Labrador", size: "LARGE", birthDate: null, weightKg: 30, notes: null },
+    ],
   },
   {
     id: "o_bo",
@@ -205,7 +227,9 @@ const owners: SeedOwner[] = [
     name: "Bo",
     phone: null,
     postalCode: "84101",
-    dogs: [{ id: "d_mochi", name: "Mochi", breed: "Shiba Inu", size: "MEDIUM", birthDate: null, weightKg: 10, notes: null }],
+    dogs: [
+      { id: "d_mochi", name: "Mochi", breed: "Shiba Inu", size: "MEDIUM", birthDate: null, weightKg: 10, notes: null },
+    ],
   },
 ];
 

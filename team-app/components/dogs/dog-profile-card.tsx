@@ -16,7 +16,10 @@ export function DogProfileCard({ dog, editHref, headingLevel: Heading = "h3" }: 
   const headingId = `dog-${dog.id}-name`;
 
   return (
-    <article aria-labelledby={headingId} className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-5 shadow-sm">
+    <article
+      aria-labelledby={headingId}
+      className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-5 shadow-sm"
+    >
       <div className="flex items-center gap-3">
         <span
           aria-hidden="true"

@@ -17,10 +17,14 @@ export function WalkCard({ walk, viewerRole, now }: WalkCardProps) {
   const headingId = `walk-${walk.id}-title`;
   const actions = availableActions(walk, viewerRole, now);
   // Each side sees the other side's name.
-  const title = viewerRole === "OWNER" ? `${walk.dogName} with ${walk.walkerName}` : `${walk.dogName}, owned by ${walk.ownerName}`;
+  const title =
+    viewerRole === "OWNER" ? `${walk.dogName} with ${walk.walkerName}` : `${walk.dogName}, owned by ${walk.ownerName}`;
 
   return (
-    <article aria-labelledby={headingId} className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-5 shadow-sm">
+    <article
+      aria-labelledby={headingId}
+      className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-5 shadow-sm"
+    >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <h3 id={headingId} className="min-w-0 break-words text-lg font-semibold text-foreground">
           {title}
@@ -37,9 +41,7 @@ export function WalkCard({ walk, viewerRole, now }: WalkCardProps) {
           <span className="font-medium">Pickup notes:</span> {walk.pickupNotes}
         </p>
       ) : null}
-      {walk.cancellation?.reason ? (
-        <p className="text-sm text-muted">Reason: {walk.cancellation.reason}</p>
-      ) : null}
+      {walk.cancellation?.reason ? <p className="text-sm text-muted">Reason: {walk.cancellation.reason}</p> : null}
 
       <WalkActions walkId={walk.id} actions={actions} dogName={walk.dogName} />
     </article>

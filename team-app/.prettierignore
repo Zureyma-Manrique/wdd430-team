@@ -1,0 +1,10 @@
+.next
+node_modules
+generated
+public
+package-lock.json
+tsconfig.tsbuildinfo
+# Migrations are SQL written for Postgres; keep them as generated or hand-written.
+prisma/migrations
+*.md
+tsconfig.json

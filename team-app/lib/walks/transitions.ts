@@ -28,8 +28,7 @@ export const WALK_TRANSITIONS: Record<WalkStatusAction, Transition> = {
 };
 
 export type TransitionCheck =
-  | { ok: true; to: WalkBookingStatus }
-  | { ok: false; reason: "WRONG_ROLE" | "WRONG_STATE" | "TOO_EARLY" };
+  { ok: true; to: WalkBookingStatus } | { ok: false; reason: "WRONG_ROLE" | "WRONG_STATE" | "TOO_EARLY" };
 
 interface WalkTiming {
   status: WalkBookingStatus;
@@ -37,7 +36,12 @@ interface WalkTiming {
 }
 
 /** Whether `role` may apply `action` to this walk at time `now`. */
-export function checkTransition(action: WalkStatusAction, walk: WalkTiming, role: UserRole, now: Date): TransitionCheck {
+export function checkTransition(
+  action: WalkStatusAction,
+  walk: WalkTiming,
+  role: UserRole,
+  now: Date,
+): TransitionCheck {
   const transition = WALK_TRANSITIONS[action];
   if (!transition.roles.includes(role)) return { ok: false, reason: "WRONG_ROLE" };
   if (!transition.from.includes(walk.status)) return { ok: false, reason: "WRONG_STATE" };

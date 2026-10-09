@@ -58,10 +58,7 @@ export default async function WalkerProfilePage({ params, searchParams }: PagePr
   return (
     <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[1fr_380px] lg:px-8">
       <div className="flex flex-col gap-8">
-        <Link
-          href="/walkers"
-          className={`w-fit ${textLinkClasses}`}
-        >
+        <Link href="/walkers" className={`w-fit ${textLinkClasses}`}>
           ← All walkers
         </Link>
 

@@ -66,7 +66,11 @@ export function WalkActions({ walkId, actions, dogName }: WalkActionsProps) {
 
   if (confirming) {
     return (
-      <div role="group" aria-label={`Confirm for ${dogName}`} className="flex flex-col gap-3 rounded-lg bg-danger-soft p-3">
+      <div
+        role="group"
+        aria-label={`Confirm for ${dogName}`}
+        className="flex flex-col gap-3 rounded-lg bg-danger-soft p-3"
+      >
         <p ref={questionRef} tabIndex={-1} className="text-sm font-medium text-foreground focus-visible:outline-none">
           {QUESTIONS[confirming]}
         </p>

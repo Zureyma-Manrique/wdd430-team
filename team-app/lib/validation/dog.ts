@@ -10,11 +10,7 @@ const birthDateSchema = z.iso
 
 // FR-011
 export const dogCreateSchema = z.strictObject({
-  name: z
-    .string()
-    .trim()
-    .min(1, { error: "Enter a name" })
-    .max(50, { error: "Name must be 50 characters or fewer" }),
+  name: z.string().trim().min(1, { error: "Enter a name" }).max(50, { error: "Name must be 50 characters or fewer" }),
   size: z.enum(DOG_SIZES, { error: "Choose a size" }),
   breed: optionalText(60),
   birthDate: birthDateSchema.optional(),

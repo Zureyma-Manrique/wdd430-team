@@ -16,7 +16,10 @@ export async function Header() {
           href="/"
           className={`flex min-h-11 items-center gap-2 rounded-lg text-lg font-bold tracking-tight text-foreground ${focusRing}`}
         >
-          <span aria-hidden="true" className="grid size-8 place-items-center rounded-full bg-primary text-primary-foreground">
+          <span
+            aria-hidden="true"
+            className="grid size-8 place-items-center rounded-full bg-primary text-primary-foreground"
+          >
             🐾
           </span>
           Paws &amp; Paths
@@ -24,11 +27,7 @@ export async function Header() {
 
         <nav aria-label="Primary" className="order-last w-full sm:order-none sm:w-auto">
           <NavLinks
-            items={[
-              ...PRIMARY_NAV,
-              ...(session ? SIGNED_IN_NAV : []),
-              ...(session?.role === "OWNER" ? OWNER_NAV : []),
-            ]}
+            items={[...PRIMARY_NAV, ...(session ? SIGNED_IN_NAV : []), ...(session?.role === "OWNER" ? OWNER_NAV : [])]}
           />
         </nav>
 

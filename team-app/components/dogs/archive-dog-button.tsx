@@ -54,7 +54,12 @@ export function ArchiveDogButton({ dogId, dogName }: ArchiveDogButtonProps) {
 
   return (
     <div role="group" aria-labelledby="archive-question" className="flex flex-col gap-3 rounded-lg bg-danger-soft p-4">
-      <p id="archive-question" ref={questionRef} tabIndex={-1} className="text-sm font-medium text-foreground focus-visible:outline-none">
+      <p
+        id="archive-question"
+        ref={questionRef}
+        tabIndex={-1}
+        className="text-sm font-medium text-foreground focus-visible:outline-none"
+      >
         Remove {dogName}? They will disappear from your dogs, but past walks and reviews keep their record.
       </p>
       {error ? (
