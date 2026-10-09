@@ -106,6 +106,8 @@ model WalkBooking {
   ownerId            String
   walkerId           String
   startAt            DateTime          @db.Timestamptz(3)
+  /// `startAt` plus the duration. Stored (not computed) so the overlap constraint can use it.
+  endAt              DateTime          @db.Timestamptz(3)
   durationMinutes    Int
   status             WalkBookingStatus @default(PENDING)
   pickupNotes        String?

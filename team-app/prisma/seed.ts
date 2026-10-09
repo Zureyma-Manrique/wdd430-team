@@ -386,6 +386,7 @@ async function main() {
         ownerId: review.ownerId,
         walkerId: review.walkerId,
         startAt: new Date(reviewedAt.getTime() - 3 * HOUR_MS),
+        endAt: new Date(reviewedAt.getTime() - 2 * HOUR_MS),
         durationMinutes: 60,
         status: "COMPLETED",
         actualStartAt: new Date(reviewedAt.getTime() - 3 * HOUR_MS),

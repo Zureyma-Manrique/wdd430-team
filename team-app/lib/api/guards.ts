@@ -28,3 +28,9 @@ export async function requireRole(role: UserRole, messages: RoleGuardMessages): 
   }
   return { ok: true, session };
 }
+
+/** For endpoints that any signed-in person may call, whatever their role. Only `401` applies. */
+export async function requireSignedIn(unauthorized: string): Promise<RoleGuardResult> {
+  const session = await getSession();
+  return session ? { ok: true, session } : { ok: false, response: apiError(401, "UNAUTHORIZED", unauthorized) };
+}

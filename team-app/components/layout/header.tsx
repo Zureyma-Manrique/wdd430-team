@@ -3,7 +3,7 @@ import { getSession } from "@/lib/auth/session";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { signOutAction } from "@/lib/auth/actions";
 import { focusRing } from "@/components/ui/styles";
-import { OWNER_NAV, PRIMARY_NAV } from "./nav-items";
+import { OWNER_NAV, PRIMARY_NAV, SIGNED_IN_NAV } from "./nav-items";
 import { NavLinks } from "./nav-links";
 
 export async function Header() {
@@ -23,7 +23,13 @@ export async function Header() {
         </Link>
 
         <nav aria-label="Primary" className="order-last w-full sm:order-none sm:w-auto">
-          <NavLinks items={session?.role === "OWNER" ? [...PRIMARY_NAV, ...OWNER_NAV] : PRIMARY_NAV} />
+          <NavLinks
+            items={[
+              ...PRIMARY_NAV,
+              ...(session ? SIGNED_IN_NAV : []),
+              ...(session?.role === "OWNER" ? OWNER_NAV : []),
+            ]}
+          />
         </nav>
 
         {session ? (
