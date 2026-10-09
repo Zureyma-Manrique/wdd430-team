@@ -1,0 +1,149 @@
+// Paws & Paths data model (spec §4 "Key Entities"). Keep the enums in sync with the `as const`
+// tuples in lib/types/index.ts; the Prisma-to-domain mappers in lib/data/mappers.ts rely on it.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+// The connection URL lives in prisma.config.ts (Prisma 7) and in lib/db.ts (runtime adapter).
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  OWNER
+  WALKER
+}
+
+enum DogSize {
+  SMALL
+  MEDIUM
+  LARGE
+  XLARGE
+}
+
+enum WalkBookingStatus {
+  PENDING
+  CONFIRMED
+  DECLINED
+  CANCELLED
+  IN_PROGRESS
+  COMPLETED
+  EXPIRED
+}
+
+/// An account. One role per account (FR-002); the role profile is `owner` or `walker`.
+model User {
+  id           String   @id @default(cuid())
+  /// Stored trimmed and lowercased, so the UNIQUE constraint also catches `A@x.com` vs `a@x.com`.
+  email        String   @unique
+  name         String
+  role         UserRole
+  /// bcrypt hash. Never leaves lib/data and lib/auth.
+  passwordHash String
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+
+  owner   PetOwner?
+  walker  Walker?
+  reviews WalkerReview[]
+}
+
+model PetOwner {
+  id         String  @id @default(cuid())
+  userId     String  @unique
+  phone      String?
+  postalCode String?
+
+  user  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dogs  Dog[]
+  walks WalkBooking[]
+}
+
+model Walker {
+  id                     String   @id @default(cuid())
+  userId                 String   @unique
+  displayName            String
+  bio                    String?
+  serviceAreaPostalCodes String[]
+  /// Whole US dollars, $5 to $200 (FR-040). Null until the walker completes the profile.
+  hourlyRate             Int?
+  photoUrl               String?
+  isActive               Boolean  @default(true)
+
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  walks   WalkBooking[]
+  reviews WalkerReview[]
+
+  @@index([isActive])
+}
+
+/// A dog. Never hard-deleted: `archivedAt` hides it from normal use but keeps past walks and reviews (spec edge cases).
+model Dog {
+  id         String    @id @default(cuid())
+  ownerId    String
+  name       String
+  breed      String?
+  size       DogSize
+  birthDate  DateTime? @db.Date
+  weightKg   Float?
+  notes      String?
+  photoUrl   String?
+  archivedAt DateTime? @db.Timestamptz(3)
+  createdAt  DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime  @updatedAt @db.Timestamptz(3)
+
+  owner PetOwner      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  walks WalkBooking[]
+
+  @@index([ownerId, archivedAt])
+}
+
+model WalkBooking {
+  id                 String            @id @default(cuid())
+  dogId              String
+  ownerId            String
+  walkerId           String
+  startAt            DateTime          @db.Timestamptz(3)
+  durationMinutes    Int
+  status             WalkBookingStatus @default(PENDING)
+  pickupNotes        String?
+  actualStartAt      DateTime?         @db.Timestamptz(3)
+  actualEndAt        DateTime?         @db.Timestamptz(3)
+  sessionNotes       String?
+  /// Set together when a walk is cancelled (FR-023).
+  cancelledByUserId  String?
+  cancellationReason String?
+  cancelledAt        DateTime?         @db.Timestamptz(3)
+  createdAt          DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime          @updatedAt @db.Timestamptz(3)
+
+  dog    Dog           @relation(fields: [dogId], references: [id])
+  owner  PetOwner      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  walker Walker        @relation(fields: [walkerId], references: [id], onDelete: Cascade)
+  review WalkerReview?
+
+  @@index([walkerId, startAt])
+  @@index([ownerId, startAt])
+}
+
+/// One review per COMPLETED walk (FR-030).
+model WalkerReview {
+  id          String    @id @default(cuid())
+  walkId      String    @unique
+  walkerId    String
+  authorId    String
+  /// Whole number, 1 to 5.
+  rating      Int
+  comment     String?
+  walkerReply String?
+  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
+  editedAt    DateTime? @db.Timestamptz(3)
+
+  walk   WalkBooking @relation(fields: [walkId], references: [id], onDelete: Cascade)
+  walker Walker      @relation(fields: [walkerId], references: [id], onDelete: Cascade)
+  author User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([walkerId, createdAt])
+}
