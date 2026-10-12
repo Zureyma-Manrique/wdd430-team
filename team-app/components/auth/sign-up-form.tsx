@@ -99,10 +99,7 @@ export function SignUpForm() {
         </p>
       ) : null}
 
-      <fieldset
-        aria-describedby={errors.role ? "sign-up-role-error" : undefined}
-        className="flex flex-col gap-2"
-      >
+      <fieldset aria-describedby={errors.role ? "sign-up-role-error" : undefined} className="flex flex-col gap-2">
         <legend className="mb-1.5 text-sm font-medium text-foreground">I am a…</legend>
         <div className="grid gap-2 sm:grid-cols-2">
           {ROLE_OPTIONS.map((option) => (

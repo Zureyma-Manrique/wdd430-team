@@ -1,15 +1,12 @@
 import "server-only";
+import type { User as UserRow } from "@/generated/prisma/client";
+import { db } from "@/lib/db";
 import type { User, UserRole } from "@/lib/types";
-import { createOwnerProfile } from "./owners";
-import { createWalkerProfile } from "./walkers";
+import { isNotFound, isUniqueViolation } from "./errors";
 
 /*
- * Account storage for Auth.js credentials sign-in (stories A1, A2).
- *
- * In-memory until Prisma + Postgres land (feature/data-model). Accounts created through
- * sign-up live only as long as the server process. When Prisma arrives, keep these function
- * signatures and swap the bodies for `prisma.user` queries; the email column gets a UNIQUE
- * constraint so duplicate sign-ups are rejected by the database, not just this check.
+ * Account storage for Auth.js credentials sign-in (stories A1, A2). Every query goes through
+ * Prisma's typed API, so values are always bound as parameters and never built into SQL strings.
  */
 
 /** Stored account. The hash never leaves `lib/data` or `lib/auth`. */
@@ -19,59 +16,45 @@ export interface UserAccount extends User {
   profileId: string;
 }
 
-// bcrypt (cost 12) of the shared demo password documented in the README.
-const DEMO_PASSWORD_HASH = "$2b$12$ug/7x2fQ0067oUfms0N2veyy03ZGwAOxm8RUuzwjC4mB2lQB23ipK";
+/** Just the id of the role profile; `toAccount` picks the one that matches `role`. */
+const withProfileIds = { owner: { select: { id: true } }, walker: { select: { id: true } } } as const;
 
-/** Demo accounts linked to the existing seed data (Jordan owns Biscuit and Luna; Sam is a seeded walker). */
-const demoAccounts: UserAccount[] = [
-  {
-    id: "u_demo_owner",
-    email: "jordan@example.com",
-    name: "Jordan",
-    role: "OWNER",
-    profileId: "o_demo01",
-    passwordHash: DEMO_PASSWORD_HASH,
-    createdAt: "2026-09-01T00:00:00.000Z",
-    updatedAt: "2026-09-01T00:00:00.000Z",
-  },
-  {
-    id: "u_sam",
-    email: "sam@example.com",
-    name: "Sam",
-    role: "WALKER",
-    profileId: "w_sam01",
-    passwordHash: DEMO_PASSWORD_HASH,
-    createdAt: "2026-09-01T00:00:00.000Z",
-    updatedAt: "2026-09-01T00:00:00.000Z",
-  },
-];
+type UserRowWithProfiles = UserRow & { owner: { id: string } | null; walker: { id: string } | null };
 
-// Kept on globalThis so dev hot reloads don't wipe accounts created during a session.
-const store = globalThis as typeof globalThis & { __pawsUserAccounts?: Map<string, UserAccount> };
-const accountsByEmail = (store.__pawsUserAccounts ??= new Map(
-  demoAccounts.map((account) => [account.email, account]),
-));
+function toAccount(row: UserRowWithProfiles | null): UserAccount | null {
+  if (!row) return null;
+  const profileId = row.role === "OWNER" ? row.owner?.id : row.walker?.id;
+  // A user without its role profile can't use the app (FR-002); treat it as "no account".
+  if (!profileId) return null;
+  return {
+    id: row.id,
+    email: row.email,
+    name: row.name,
+    role: row.role,
+    passwordHash: row.passwordHash,
+    profileId,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
 
 /** `email` must already be normalized (trimmed, lowercased) by `emailSchema`. */
 export async function findUserByEmail(email: string): Promise<UserAccount | null> {
-  return accountsByEmail.get(email) ?? null;
+  return toAccount(await db().user.findUnique({ where: { email }, include: withProfileIds }));
 }
 
 export async function findUserById(id: string): Promise<UserAccount | null> {
-  for (const account of accountsByEmail.values()) {
-    if (account.id === id) return account;
-  }
-  return null;
+  return toAccount(await db().user.findUnique({ where: { id }, include: withProfileIds }));
 }
 
 /** Renames the account (story A3). `name` must already be validated. Returns `null` if the user doesn't exist. */
 export async function updateUserName(id: string, name: string): Promise<UserAccount | null> {
-  const account = await findUserById(id);
-  if (!account) return null;
-
-  const updated: UserAccount = { ...account, name, updatedAt: new Date().toISOString() };
-  accountsByEmail.set(updated.email, updated);
-  return updated;
+  try {
+    return toAccount(await db().user.update({ where: { id }, data: { name }, include: withProfileIds }));
+  } catch (error) {
+    if (isNotFound(error)) return null;
+    throw error;
+  }
 }
 
 export interface NewUserAccount {
@@ -84,28 +67,28 @@ export interface NewUserAccount {
 export type CreateUserResult = { ok: true; user: UserAccount } | { ok: false; reason: "EMAIL_TAKEN" };
 
 /**
- * Creates the user and its empty role profile (FR-002). A new walker profile has no rate or
- * service area, so it stays out of search until the walker completes it at /profile (FR-041).
+ * Creates the user and its empty role profile in one transaction (FR-002). A new walker profile
+ * has no rate or service area, so it stays out of search until the walker completes it at
+ * /profile (FR-041). The UNIQUE constraint on `email` rejects duplicates, even when two
+ * sign-ups race.
  */
 export async function createUser(input: NewUserAccount): Promise<CreateUserResult> {
-  if (accountsByEmail.has(input.email)) {
-    return { ok: false, reason: "EMAIL_TAKEN" };
+  try {
+    const row = await db().user.create({
+      data: {
+        email: input.email,
+        name: input.name,
+        role: input.role,
+        passwordHash: input.passwordHash,
+        ...(input.role === "WALKER" ? { walker: { create: { displayName: input.name } } } : { owner: { create: {} } }),
+      },
+      include: withProfileIds,
+    });
+    const user = toAccount(row);
+    if (!user) throw new Error("A new account is missing its role profile");
+    return { ok: true, user };
+  } catch (error) {
+    if (isUniqueViolation(error)) return { ok: false, reason: "EMAIL_TAKEN" };
+    throw error;
   }
-
-  const now = new Date().toISOString();
-  const suffix = crypto.randomUUID();
-  const user: UserAccount = {
-    ...input,
-    id: `u_${suffix}`,
-    profileId: `${input.role === "OWNER" ? "o" : "w"}_${suffix}`,
-    createdAt: now,
-    updatedAt: now,
-  };
-  accountsByEmail.set(user.email, user);
-  if (user.role === "WALKER") {
-    await createWalkerProfile({ id: user.profileId, userId: user.id, displayName: user.name });
-  } else {
-    await createOwnerProfile({ id: user.profileId, userId: user.id });
-  }
-  return { ok: true, user };
 }

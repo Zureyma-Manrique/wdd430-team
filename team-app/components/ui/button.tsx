@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ComponentProps } from "react";
 import { focusRing } from "./styles";
 
-type ButtonVariant = "primary" | "secondary" | "ghost";
+type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 
 const base =
   `inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition-colors ${focusRing} ` +
@@ -12,6 +12,8 @@ const variants: Record<ButtonVariant, string> = {
   primary: "bg-primary text-primary-foreground hover:bg-primary-hover",
   secondary: "border border-border bg-surface text-foreground hover:bg-surface-muted",
   ghost: "text-primary hover:bg-primary-soft",
+  // Outlined, so it's never the loudest button on the page. The label always says what it does.
+  danger: "border border-danger bg-surface text-danger hover:bg-danger-soft",
 };
 
 /** Shared button styling. `min-h-11` keeps a 44px touch target. */

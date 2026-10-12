@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth/session";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { signOutAction } from "@/lib/auth/actions";
 import { focusRing } from "@/components/ui/styles";
+import { OWNER_NAV, PRIMARY_NAV, SIGNED_IN_NAV } from "./nav-items";
 import { NavLinks } from "./nav-links";
 
 export async function Header() {
@@ -15,14 +16,19 @@ export async function Header() {
           href="/"
           className={`flex min-h-11 items-center gap-2 rounded-lg text-lg font-bold tracking-tight text-foreground ${focusRing}`}
         >
-          <span aria-hidden="true" className="grid size-8 place-items-center rounded-full bg-primary text-primary-foreground">
+          <span
+            aria-hidden="true"
+            className="grid size-8 place-items-center rounded-full bg-primary text-primary-foreground"
+          >
             🐾
           </span>
           Paws &amp; Paths
         </Link>
 
         <nav aria-label="Primary" className="order-last w-full sm:order-none sm:w-auto">
-          <NavLinks />
+          <NavLinks
+            items={[...PRIMARY_NAV, ...(session ? SIGNED_IN_NAV : []), ...(session?.role === "OWNER" ? OWNER_NAV : [])]}
+          />
         </nav>
 
         {session ? (

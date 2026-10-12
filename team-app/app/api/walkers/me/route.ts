@@ -1,23 +1,15 @@
 import { z } from "zod";
 import { apiError, readJsonBody } from "@/lib/api/http";
-import { getSession } from "@/lib/auth/session";
+import { requireRole } from "@/lib/api/guards";
 import { getOwnWalkerProfile, updateWalkerProfile } from "@/lib/data/walkers";
-import type { SessionUser } from "@/lib/types";
 import { walkerProfileUpdateSchema } from "@/lib/validation";
 
-type WalkerSessionResult = { ok: true; session: SessionUser } | { ok: false; response: Response };
-
 /** Authentication → role. Only walker accounts have a walker profile (story A3, scenario 4). */
-async function requireWalker(): Promise<WalkerSessionResult> {
-  const session = await getSession();
-  if (!session) {
-    return { ok: false, response: apiError(401, "UNAUTHORIZED", "Sign in to manage your profile") };
-  }
-  if (session.role !== "WALKER") {
-    return { ok: false, response: apiError(403, "FORBIDDEN", "Only walker accounts have a walker profile") };
-  }
-  return { ok: true, session };
-}
+const requireWalker = () =>
+  requireRole("WALKER", {
+    unauthorized: "Sign in to manage your profile",
+    forbidden: "Only walker accounts have a walker profile",
+  });
 
 /** GET /api/walkers/me: my walker profile, including incomplete or inactive ones. */
 export async function GET(): Promise<Response> {

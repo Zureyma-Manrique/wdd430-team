@@ -15,22 +15,18 @@ export const BOOKING_WINDOW_MESSAGE = "Walks must be booked between 1 hour and 6
 export const durationMinutesSchema = z
   .number()
   .int()
-  .refine(
-    (value): value is WalkDurationMinutes =>
-      (WALK_DURATIONS_MINUTES as readonly number[]).includes(value),
-    { error: "Duration must be 30, 45, or 60 minutes" },
-  );
+  .refine((value): value is WalkDurationMinutes => (WALK_DURATIONS_MINUTES as readonly number[]).includes(value), {
+    error: "Duration must be 30, 45, or 60 minutes",
+  });
 
 /** Start time must carry an explicit UTC offset and fall inside the booking window (FR-021). */
-export const walkStartAtSchema = z.iso
-  .datetime({ offset: true, error: "Enter a valid date and time" })
-  .refine(
-    (value) => {
-      const leadMs = new Date(value).getTime() - Date.now();
-      return leadMs >= MIN_BOOKING_LEAD_MS && leadMs <= MAX_BOOKING_LEAD_MS;
-    },
-    { error: BOOKING_WINDOW_MESSAGE },
-  );
+export const walkStartAtSchema = z.iso.datetime({ offset: true, error: "Enter a valid date and time" }).refine(
+  (value) => {
+    const leadMs = new Date(value).getTime() - Date.now();
+    return leadMs >= MIN_BOOKING_LEAD_MS && leadMs <= MAX_BOOKING_LEAD_MS;
+  },
+  { error: BOOKING_WINDOW_MESSAGE },
+);
 
 // POST /api/walks (FR-020). `ownerId` is never accepted from the client; it comes from the session.
 export const walkCreateSchema = z.strictObject({

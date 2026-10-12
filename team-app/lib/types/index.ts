@@ -104,6 +104,8 @@ export interface WalkBooking {
   ownerId: string;
   walkerId: string;
   startAt: IsoDateTime;
+  /** `startAt` plus the duration. */
+  endAt: IsoDateTime;
   durationMinutes: WalkDurationMinutes;
   status: WalkBookingStatus;
   pickupNotes: string | null;
@@ -113,6 +115,13 @@ export interface WalkBooking {
   cancellation: WalkCancellation | null;
   createdAt: IsoDateTime;
   updatedAt: IsoDateTime;
+}
+
+/** A walk as shown in lists: the booking plus the names a person needs to recognize it. */
+export interface WalkSummary extends WalkBooking {
+  dogName: string;
+  walkerName: string;
+  ownerName: string;
 }
 
 export interface WalkerReview {

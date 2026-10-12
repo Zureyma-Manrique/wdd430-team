@@ -26,6 +26,16 @@ export function formatPhone(phone: string): string {
   return match ? `(${match[1]}) ${match[2]}-${match[3]}` : phone;
 }
 
+/** `30` → "30 min". */
+export function formatDuration(minutes: number): string {
+  return `${minutes} min`;
+}
+
+/** Server-side walk time, fixed to UTC so server and client render the same HTML. `LocalDateTime` swaps in the viewer's own zone after hydration. */
+export function formatDateTimeUtc(iso: string): string {
+  return `${new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" }).format(new Date(iso))} UTC`;
+}
+
 /** Up to two initials, e.g. "Sam Rivera" → "SR". */
 export function initials(name: string): string {
   return name

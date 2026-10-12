@@ -4,12 +4,7 @@ import type { ApiErrorBody } from "@/lib/types";
 const MAX_JSON_BODY_BYTES = 16 * 1024;
 
 /** Error response in the spec §6 format. Never put stack traces or internal details in `message`. */
-export function apiError(
-  status: number,
-  code: string,
-  message: string,
-  details?: Record<string, unknown>,
-): Response {
+export function apiError(status: number, code: string, message: string, details?: Record<string, unknown>): Response {
   const body: ApiErrorBody = { error: { code, message, ...(details ? { details } : {}) } };
   return Response.json(body, { status });
 }

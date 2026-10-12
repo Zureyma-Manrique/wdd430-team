@@ -3,19 +3,22 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { focusRing } from "@/components/ui/styles";
-import { PRIMARY_NAV } from "./nav-items";
 
 function isActive(pathname: string, href: string): boolean {
   return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 }
 
+interface NavLinksProps {
+  items: ReadonlyArray<{ href: string; label: string }>;
+}
+
 /** Client leaf: needs `usePathname` to mark the current page with `aria-current`. */
-export function NavLinks() {
+export function NavLinks({ items }: NavLinksProps) {
   const pathname = usePathname();
 
   return (
     <ul className="flex flex-wrap items-center gap-1 sm:gap-2">
-      {PRIMARY_NAV.map(({ href, label }) => {
+      {items.map(({ href, label }) => {
         const active = isActive(pathname, href);
         return (
           <li key={href}>

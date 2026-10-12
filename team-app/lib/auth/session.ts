@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import type { SessionUser } from "@/lib/types";
 import { findUserById } from "@/lib/data/users";
 import { auth } from "./auth";
@@ -8,8 +9,11 @@ import { auth } from "./auth";
  *
  * Every page and Route Handler that exposes private data MUST call this and handle `null`
  * (deny by default), even though `proxy.ts` also guards the protected pages.
+ *
+ * Wrapped in `cache()`: the header, footer and page of one request all call it, and each call
+ * reads the account from the database, so this keeps it to a single lookup per request.
  */
-export async function getSession(): Promise<SessionUser | null> {
+export const getSession = cache(async (): Promise<SessionUser | null> => {
   const session = await auth();
   if (session?.user?.id && session.user.role && session.user.profileId) {
     // Read the account on every request: the name can change after sign-in (story A3), and a
@@ -34,4 +38,4 @@ export async function getSession(): Promise<SessionUser | null> {
     }
   }
   return null;
-}
+});

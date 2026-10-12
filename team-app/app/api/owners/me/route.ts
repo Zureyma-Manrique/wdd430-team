@@ -1,24 +1,17 @@
 import { z } from "zod";
 import { apiError, readJsonBody } from "@/lib/api/http";
-import { getSession } from "@/lib/auth/session";
+import { requireRole } from "@/lib/api/guards";
 import { getOwnOwnerProfile, updateOwnerProfile } from "@/lib/data/owners";
 import { findUserById, updateUserName } from "@/lib/data/users";
-import type { PetOwner, SessionUser } from "@/lib/types";
+import type { PetOwner } from "@/lib/types";
 import { ownerProfileUpdateSchema } from "@/lib/validation";
 
-type OwnerSessionResult = { ok: true; session: SessionUser } | { ok: false; response: Response };
-
 /** Authentication → role. Only owner accounts have an owner profile (mirrors /api/walkers/me). */
-async function requireOwner(): Promise<OwnerSessionResult> {
-  const session = await getSession();
-  if (!session) {
-    return { ok: false, response: apiError(401, "UNAUTHORIZED", "Sign in to manage your profile") };
-  }
-  if (session.role !== "OWNER") {
-    return { ok: false, response: apiError(403, "FORBIDDEN", "Only owner accounts have an owner profile") };
-  }
-  return { ok: true, session };
-}
+const requireOwner = () =>
+  requireRole("OWNER", {
+    unauthorized: "Sign in to manage your profile",
+    forbidden: "Only owner accounts have an owner profile",
+  });
 
 function toBody(owner: PetOwner, name: string) {
   return { owner: { id: owner.id, name, phone: owner.phone, postalCode: owner.postalCode } };

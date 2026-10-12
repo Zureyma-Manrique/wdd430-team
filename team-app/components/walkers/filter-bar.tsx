@@ -80,12 +80,7 @@ export function FilterBar({ initial }: FilterBarProps) {
         error={postalCodeError}
       />
 
-      <SelectField
-        id="filter-min-rating"
-        name="minRating"
-        label="Minimum rating"
-        defaultValue={initial.minRating}
-      >
+      <SelectField id="filter-min-rating" name="minRating" label="Minimum rating" defaultValue={initial.minRating}>
         <option value="">Any rating</option>
         {MIN_RATING_OPTIONS.map((rating) => (
           <option key={rating} value={String(rating)}>
@@ -94,12 +89,7 @@ export function FilterBar({ initial }: FilterBarProps) {
         ))}
       </SelectField>
 
-      <SelectField
-        id="filter-sort"
-        name="sort"
-        label="Sort by"
-        defaultValue={initial.sort}
-      >
+      <SelectField id="filter-sort" name="sort" label="Sort by" defaultValue={initial.sort}>
         <option value="rating">Rating: high to low</option>
         <option value="price">Price: low to high</option>
       </SelectField>

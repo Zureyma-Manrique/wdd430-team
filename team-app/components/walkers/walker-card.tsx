@@ -27,9 +27,7 @@ export function WalkerCard({ walker }: WalkerCardProps) {
           </div>
         </div>
         {walker.hourlyRate !== null ? (
-          <p className="text-right text-lg font-bold text-foreground">
-            {formatHourlyRate(walker.hourlyRate)}
-          </p>
+          <p className="text-right text-lg font-bold text-foreground">{formatHourlyRate(walker.hourlyRate)}</p>
         ) : null}
       </div>
 
