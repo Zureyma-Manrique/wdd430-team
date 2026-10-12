@@ -14,7 +14,8 @@ import { PrismaClient } from "@/generated/prisma/client";
 const globalForPrisma = globalThis as typeof globalThis & { __pawsPrisma?: PrismaClient };
 
 function createClient(): PrismaClient {
-  const connectionString = process.env.DATABASE_URL;
+  // POSTGRES_URL is the name Vercel's Neon integration adds next to DATABASE_URL.
+  const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
   if (!connectionString) {
     // Fails loudly and early. Never include the connection string itself in the message.
     throw new Error("DATABASE_URL is not set. Copy .env.example to .env.local and fill it in (see README).");
