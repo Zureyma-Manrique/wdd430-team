@@ -91,17 +91,33 @@ export async function getOwnWalkerProfile(walkerId: string): Promise<Walker | nu
  */
 export async function updateWalkerProfile(walkerId: string, input: WalkerProfileUpdateInput): Promise<Walker | null> {
   try {
-    // TODO: setting isActive to false must also cancel upcoming walks (spec §6 PATCH
-    // /api/walkers/me and the "walker deactivates" edge case). Tracked in issue #35.
-    const row = await db().walker.update({
-      where: { id: walkerId },
-      data: {
-        bio: input.bio,
-        serviceAreaPostalCodes: input.serviceAreaPostalCodes,
-        hourlyRate: input.hourlyRate,
-        photoUrl: input.photoUrl,
-        isActive: input.isActive,
-      },
+    const row = await db().$transaction(async (tx) => {
+      const updated = await tx.walker.update({
+        where: { id: walkerId },
+        data: {
+          bio: input.bio,
+          serviceAreaPostalCodes: input.serviceAreaPostalCodes,
+          hourlyRate: input.hourlyRate,
+          photoUrl: input.photoUrl,
+          isActive: input.isActive,
+        },
+      });
+      if (input.isActive === false) {
+        // Spec edge case "walker deactivates" (issue #35): requests and confirmed walks that haven't
+        // started are cancelled, with the walker as the canceller so owners see why. A walk that is
+        // already in progress is left alone. Same transaction, so the profile never ends up paused
+        // while its walks are still booked.
+        await tx.walkBooking.updateMany({
+          where: { walkerId, status: { in: ["PENDING", "CONFIRMED"] }, startAt: { gt: new Date() } },
+          data: {
+            status: "CANCELLED",
+            cancelledByUserId: updated.userId,
+            cancellationReason: "The walker paused their profile",
+            cancelledAt: new Date(),
+          },
+        });
+      }
+      return updated;
     });
     return toWalker(row);
   } catch (error) {
