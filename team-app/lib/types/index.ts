@@ -117,13 +117,23 @@ export interface WalkBooking {
   updatedAt: IsoDateTime;
 }
 
+/** The review attached to a walk, as shown on the walk's card (stories D1, D3, D4). */
+export interface WalkReviewSummary {
+  id: string;
+  rating: number;
+  comment: string | null;
+  walkerReply: string | null;
+  createdAt: IsoDateTime;
+  editedAt: IsoDateTime | null;
+}
+
 /** A walk as shown in lists: the booking plus the names a person needs to recognize it. */
 export interface WalkSummary extends WalkBooking {
   dogName: string;
   walkerName: string;
   ownerName: string;
   /** The owner's review of this walk (story D1), or `null` if there isn't one. */
-  review: { id: string; rating: number; comment: string | null } | null;
+  review: WalkReviewSummary | null;
 }
 
 export interface WalkerReview {

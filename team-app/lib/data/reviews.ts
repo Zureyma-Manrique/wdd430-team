@@ -1,8 +1,9 @@
 import "server-only";
 import { db } from "@/lib/db";
 import type { SessionUser, WalkerReview } from "@/lib/types";
-import type { ReviewCreateInput } from "@/lib/validation";
-import { isUniqueViolation } from "./errors";
+import type { ReviewCreateInput, ReviewUpdateInput } from "@/lib/validation";
+import { isWithinEditWindow } from "@/lib/reviews/edit-window";
+import { isNotFound, isUniqueViolation } from "./errors";
 
 /*
  * Walker reviews (stories D1 to D4). A review belongs to one completed walk. `actor` always comes
@@ -65,6 +66,62 @@ export async function createReview(actor: Actor, input: ReviewCreateInput): Prom
     return { ok: true, review: toReview(row) };
   } catch (error) {
     if (isUniqueViolation(error)) return { ok: false, reason: "ALREADY_REVIEWED" };
+    throw error;
+  }
+}
+
+export type UpdateReviewResult = { ok: true; review: WalkerReview } | { ok: false; reason: "NOT_FOUND" | "LOCKED" };
+
+/**
+ * Story D3, FR-031/FR-032: only the author can edit, and only within 30 days. Somebody else's
+ * review is a `NOT_FOUND` (FR-004). The walker's average is computed from the reviews, so it
+ * reflects the new rating at once.
+ */
+export async function updateReview(
+  actor: Actor,
+  reviewId: string,
+  input: ReviewUpdateInput,
+  now: Date = new Date(),
+): Promise<UpdateReviewResult> {
+  const review = await db().walkerReview.findFirst({ where: { id: reviewId, authorId: actor.id } });
+  if (!review) return { ok: false, reason: "NOT_FOUND" };
+  if (!isWithinEditWindow(review.createdAt, now)) return { ok: false, reason: "LOCKED" };
+
+  const row = await db().walkerReview.update({
+    where: { id: review.id },
+    data: {
+      ...(input.rating !== undefined ? { rating: input.rating } : {}),
+      ...(input.comment !== undefined ? { comment: input.comment } : {}),
+      editedAt: now,
+    },
+  });
+  return { ok: true, review: toReview(row) };
+}
+
+/** Story D3: the author may delete their review at any time. `false` means it wasn't theirs or is gone. */
+export async function deleteReview(actor: Actor, reviewId: string): Promise<boolean> {
+  const { count } = await db().walkerReview.deleteMany({ where: { id: reviewId, authorId: actor.id } });
+  return count > 0;
+}
+
+/**
+ * Story D4, FR-033: the reviewed walker posts one reply to a review, and posting again replaces
+ * it. A review of another walker is a `NOT_FOUND`.
+ */
+export async function replyToReview(
+  walker: Pick<SessionUser, "profileId">,
+  reviewId: string,
+  reply: string,
+): Promise<WalkerReview | null> {
+  try {
+    const { count } = await db().walkerReview.updateMany({
+      where: { id: reviewId, walkerId: walker.profileId },
+      data: { walkerReply: reply },
+    });
+    if (count === 0) return null;
+    return toReview(await db().walkerReview.findUniqueOrThrow({ where: { id: reviewId } }));
+  } catch (error) {
+    if (isNotFound(error)) return null;
     throw error;
   }
 }

@@ -2,7 +2,10 @@ import { formatDuration } from "@/lib/format";
 import type { UserRole, WalkSummary } from "@/lib/types";
 import { availableActions } from "@/lib/walks/transitions";
 import { LocalDateTime } from "./local-date-time";
+import { isWithinEditWindow } from "@/lib/reviews/edit-window";
+import { ReviewActions } from "./review-actions";
 import { ReviewForm } from "./review-form";
+import { ReviewReplyForm } from "./review-reply-form";
 import { WalkActions } from "./walk-actions";
 import { WalkStatusBadge } from "./walk-status-badge";
 
@@ -43,11 +46,33 @@ export function WalkCard({ walk, viewerRole, now }: WalkCardProps) {
         </p>
       ) : null}
       {walk.review ? (
-        <p className="rounded-lg bg-accent-soft px-3 py-2 text-sm text-accent">
-          <span aria-hidden="true">{"★".repeat(walk.review.rating)}</span>
-          <span className="sr-only">Review: {walk.review.rating} out of 5 stars.</span>
-          {walk.review.comment ? <span className="ml-2 text-foreground">{walk.review.comment}</span> : null}
-        </p>
+        <div className="flex flex-col gap-2">
+          <p className="rounded-lg bg-accent-soft px-3 py-2 text-sm text-accent">
+            <span aria-hidden="true">{"★".repeat(walk.review.rating)}</span>
+            <span className="sr-only">Review: {walk.review.rating} out of 5 stars.</span>
+            {walk.review.comment ? <span className="ml-2 text-foreground">{walk.review.comment}</span> : null}
+            {walk.review.editedAt ? <span className="ml-2 text-xs text-muted">(edited)</span> : null}
+          </p>
+          {walk.review.walkerReply ? (
+            <p className="rounded-lg bg-surface-muted px-3 py-2 text-sm text-foreground">
+              <span className="font-medium">Reply from {walk.walkerName}:</span> {walk.review.walkerReply}
+            </p>
+          ) : null}
+          {viewerRole === "OWNER" ? (
+            <ReviewActions
+              walkId={walk.id}
+              walkerName={walk.walkerName}
+              review={walk.review}
+              canEdit={isWithinEditWindow(walk.review.createdAt, now)}
+            />
+          ) : (
+            <ReviewReplyForm
+              reviewId={walk.review.id}
+              currentReply={walk.review.walkerReply}
+              ownerName={walk.ownerName}
+            />
+          )}
+        </div>
       ) : viewerRole === "OWNER" && walk.status === "COMPLETED" ? (
         <ReviewForm walkId={walk.id} walkerName={walk.walkerName} />
       ) : null}

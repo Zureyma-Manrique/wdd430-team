@@ -12,6 +12,10 @@ import { reviewCreateSchema } from "@/lib/validation/review";
 interface ReviewFormProps {
   walkId: string;
   walkerName: string;
+  /** When set, the form edits this review (story D3) instead of creating one, and opens at once. */
+  existing?: { id: string; rating: number; comment: string | null };
+  /** Called by "Never mind" in edit mode, so the parent can close the form. */
+  onCancel?: () => void;
 }
 
 const RATINGS = [1, 2, 3, 4, 5] as const;
@@ -21,12 +25,12 @@ const RATINGS = [1, 2, 3, 4, 5] as const;
  * radio group, so the arrow keys move the selection and Space or Enter on the button sends it,
  * with no mouse needed. The same Zod schema the Route Handler uses checks the input first.
  */
-export function ReviewForm({ walkId, walkerName }: ReviewFormProps) {
+export function ReviewForm({ walkId, walkerName, existing, onCancel }: ReviewFormProps) {
   const router = useRouter();
   const firstStarRef = useRef<HTMLInputElement>(null);
-  const [open, setOpen] = useState(false);
-  const [rating, setRating] = useState(0);
-  const [comment, setComment] = useState("");
+  const [open, setOpen] = useState(Boolean(existing));
+  const [rating, setRating] = useState(existing?.rating ?? 0);
+  const [comment, setComment] = useState(existing?.comment ?? "");
   const [errors, setErrors] = useState<{ rating?: string; comment?: string; form?: string }>({});
   const [pending, setPending] = useState(false);
 
@@ -48,10 +52,11 @@ export function ReviewForm({ walkId, walkerName }: ReviewFormProps) {
     setErrors({});
     setPending(true);
     try {
-      const response = await fetch("/api/reviews", {
-        method: "POST",
+      const response = await fetch(existing ? `/api/reviews/${existing.id}` : "/api/reviews", {
+        method: existing ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(parsed.data),
+        // Editing sends only what can change; the walk can't be switched to another one.
+        body: JSON.stringify(existing ? { rating: parsed.data.rating, comment: comment.trim() } : parsed.data),
       });
       if (!response.ok) {
         setErrors({ form: (await readApiError(response)).message });
@@ -60,6 +65,7 @@ export function ReviewForm({ walkId, walkerName }: ReviewFormProps) {
       }
       // The page re-renders with the saved review in place of this form.
       router.refresh();
+      if (existing) onCancel?.();
     } catch {
       setErrors({ form: "Something went wrong. Please try again." });
       setPending(false);
@@ -133,9 +139,16 @@ export function ReviewForm({ walkId, walkerName }: ReviewFormProps) {
       ) : null}
       <div className="flex flex-wrap gap-2">
         <Button type="submit" disabled={pending}>
-          {pending ? "Saving…" : "Post review"}
+          {pending ? "Saving…" : existing ? "Save changes" : "Post review"}
         </Button>
-        <Button variant="secondary" onClick={() => setOpen(false)} disabled={pending}>
+        <Button
+          variant="secondary"
+          onClick={() => {
+            setOpen(false);
+            onCancel?.();
+          }}
+          disabled={pending}
+        >
           Never mind
         </Button>
       </div>

@@ -19,7 +19,7 @@ const summaryInclude = {
   dog: { select: { name: true } },
   walker: { select: { displayName: true } },
   owner: { select: { user: { select: { name: true } } } },
-  review: { select: { id: true, rating: true, comment: true } },
+  review: { select: { id: true, rating: true, comment: true, walkerReply: true, createdAt: true, editedAt: true } },
 } satisfies Prisma.WalkBookingInclude;
 
 type WalkRow = Prisma.WalkBookingGetPayload<{ include: typeof summaryInclude }>;
@@ -52,7 +52,13 @@ function toWalkSummary(row: WalkRow): WalkSummary {
     dogName: row.dog.name,
     walkerName: row.walker.displayName,
     ownerName: row.owner.user.name,
-    review: row.review,
+    review: row.review
+      ? {
+          ...row.review,
+          createdAt: row.review.createdAt.toISOString(),
+          editedAt: row.review.editedAt ? row.review.editedAt.toISOString() : null,
+        }
+      : null,
   };
 }
 

@@ -21,7 +21,8 @@ export const reviewUpdateSchema = z
     rating: ratingSchema,
     comment: clearableText(1000),
   })
-  .partial();
+  .partial()
+  .refine((value) => Object.keys(value).length > 0, { error: "Send at least one field to change" });
 export type ReviewUpdateInput = z.infer<typeof reviewUpdateSchema>;
 
 // PUT /api/reviews/[id]/reply (FR-033)

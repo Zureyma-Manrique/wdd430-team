@@ -26,7 +26,7 @@ Dog owners who work long days or travel have no easy way to find a walker they c
 | **Dogs (CRUD)** | Owners add, edit and remove dogs. Removing archives the dog, so past walks and reviews keep their record. |
 | Find a walker | Search by postal code, sort by rating or price, filter by minimum rating. Public walker pages show ratings and reviews. |
 | **Walks (booking)** | Owners request a walk for a dog; walkers accept, decline, start and complete it; either side can cancel. A walker can't be double-booked, which the database itself enforces. |
-| **Reviews** | After a walk is completed, its owner rates it 1 to 5 stars with an optional comment (keyboard friendly). Each walk can be reviewed once. The walker's average and review count update at once, and the profile lists reviews newest first, 10 at a time. |
+| **Reviews** | After a walk is completed, its owner rates it 1 to 5 stars with an optional comment (keyboard friendly). Each walk can be reviewed once. They can edit it for 30 days (it is then marked "Edited") and delete it at any time, and the walker can post one public reply, which a new reply replaces. The walker's average and review count update at once, and the profile lists reviews newest first, 10 at a time. |
 | Quality | Responsive from 360 px up, light and dark themes, WCAG AAA text contrast, loading / empty / error states, page metadata and a generated share image. |
 
 There are 11 pages: Home, Find a walker, Walker profile, Sign in, Sign up, Dashboard, Profile, My dogs, Add a dog, Edit a dog and My walks.
@@ -166,6 +166,9 @@ Status codes: `200` OK · `201` created · `204` no content · `400` invalid inp
 | `GET` | `/api/walks` | Owner or walker | My walks. Query: `status` (comma-separated), `dogId`, `from`, `to` (dates in `tz`), `tz` (IANA zone), `page`, `pageSize`. |
 | `POST` | `/api/walks` | Owner | `{ dogId, walkerId, startAt, durationMinutes, pickupNotes? }` → `201`, status `PENDING`. `startAt` is ISO 8601 with an offset, 1 hour to 60 days ahead; `durationMinutes` is 30, 45 or 60. `409 WALKER_UNAVAILABLE` if it overlaps another active walk of that walker. |
 | `POST` | `/api/reviews` | Owner | `{ walkId, rating (1 to 5), comment? }` → `201`. `404` if the walk isn't yours, `409 WALK_NOT_COMPLETED` unless it is `COMPLETED`, `409 ALREADY_REVIEWED` for a second review. |
+| `PATCH` | `/api/reviews/[id]` | Owner (author) | `{ rating?, comment? }`, within 30 days of writing it (`409 REVIEW_LOCKED` after). Someone else's review is `404`. |
+| `DELETE` | `/api/reviews/[id]` | Owner (author) | `204`. Allowed at any time. |
+| `PUT` | `/api/reviews/[id]/reply` | Walker (reviewed) | `{ reply }`, 1 to 500 characters. Creates or replaces the walker's one reply. |
 | `POST` | `/api/walks/[id]/status` | Owner or walker | `{ action, reason?, sessionNotes? }`. See the table below. |
 
 Allowed status changes (anything else is `409`; the wrong role is `403`):
@@ -221,7 +224,7 @@ Strongest category: Accessibility, Best Practices and SEO are all 100. Weakest: 
 - **Google sign-in is not built** (the spec lists it; tracked in issue #32). Only email and password work.
 - **No automated tests or CI yet** (issue #34). Everything above was verified by hand.
 - **Sessions are JWTs, not database sessions.** Auth.js supports its Credentials provider only with JWT sessions. Accounts live in Postgres, and the account is re-read on every request, so a deleted account is signed out immediately.
-- **Reviews can't be edited, deleted or answered yet.** Owners can post one (story D1) and everyone can read them (D2), but editing or deleting a review (D3) and the walker's reply (D4) are not built.
+- **Reviews are managed from My walks only.** There is no `GET /api/reviews` list endpoint (the walker profile reads them directly), and a walker can replace but not delete a reply.
 - **Requests never expire on their own.** A pending request whose time has passed just moves to "Past".
 - **Deactivating a walker doesn't cancel their upcoming walks** (issue #35).
 - **No live walk-status page.** Walkers can start and complete a walk, but there is no polling status page for owners (story C6).
