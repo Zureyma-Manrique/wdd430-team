@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { textLinkClasses } from "@/components/ui/styles";
 import { formatDuration } from "@/lib/format";
 import type { UserRole, WalkSummary } from "@/lib/types";
 import { availableActions, canReschedule } from "@/lib/walks/transitions";
@@ -15,10 +17,12 @@ interface WalkCardProps {
   viewerRole: UserRole;
   /** The current time. Passed in so one page uses one clock for every card. */
   now: Date;
+  /** The "Details" link to the walk's own page. Off on that page itself. */
+  showDetailsLink?: boolean;
 }
 
 /** One walk: who, when, status, and the actions this person may take (stories C3 to C5). */
-export function WalkCard({ walk, viewerRole, now }: WalkCardProps) {
+export function WalkCard({ walk, viewerRole, now, showDetailsLink = true }: WalkCardProps) {
   const headingId = `walk-${walk.id}-title`;
   const actions = availableActions(walk, viewerRole, now);
   // Each side sees the other side's name.
@@ -44,6 +48,11 @@ export function WalkCard({ walk, viewerRole, now }: WalkCardProps) {
       {walk.pickupNotes ? (
         <p className="rounded-lg bg-surface-muted px-3 py-2 text-sm text-foreground">
           <span className="font-medium">Pickup notes:</span> {walk.pickupNotes}
+        </p>
+      ) : null}
+      {walk.sessionNotes ? (
+        <p className="rounded-lg bg-surface-muted px-3 py-2 text-sm text-foreground">
+          <span className="font-medium">Walk notes from {walk.walkerName}:</span> {walk.sessionNotes}
         </p>
       ) : null}
       {walk.review ? (
@@ -79,6 +88,15 @@ export function WalkCard({ walk, viewerRole, now }: WalkCardProps) {
       ) : null}
       {walk.cancellation?.reason ? <p className="text-sm text-muted">Reason: {walk.cancellation.reason}</p> : null}
 
+      {showDetailsLink ? (
+        <Link
+          href={`/walks/${walk.id}`}
+          className={`w-fit ${textLinkClasses}`}
+          aria-label={`Details for ${walk.dogName}'s walk`}
+        >
+          Details
+        </Link>
+      ) : null}
       <WalkActions walkId={walk.id} actions={actions} dogName={walk.dogName} />
       {viewerRole === "OWNER" && canReschedule(walk, now) ? (
         <RescheduleForm walkId={walk.id} dogName={walk.dogName} />

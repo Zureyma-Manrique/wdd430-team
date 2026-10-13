@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { controlClasses } from "@/components/ui/form-field";
 import { readApiError } from "@/lib/api/error-body";
 import type { WalkStatusAction } from "@/lib/types";
 
@@ -17,7 +18,7 @@ const LABELS: Record<WalkStatusAction, string> = {
   accept: "Accept",
   decline: "Decline",
   start: "Start walk",
-  complete: "Complete walk",
+  complete: "End walk",
   cancel: "Cancel walk",
 };
 
@@ -33,6 +34,7 @@ export function WalkActions({ walkId, actions, dogName }: WalkActionsProps) {
   const [confirming, setConfirming] = useState<WalkStatusAction | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sessionNotes, setSessionNotes] = useState("");
 
   useEffect(() => {
     if (confirming) questionRef.current?.focus();
@@ -45,7 +47,9 @@ export function WalkActions({ walkId, actions, dogName }: WalkActionsProps) {
       const response = await fetch(`/api/walks/${walkId}/status`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action }),
+        body: JSON.stringify(
+          action === "complete" && sessionNotes.trim() ? { action, sessionNotes: sessionNotes.trim() } : { action },
+        ),
       });
       if (!response.ok) {
         setError((await readApiError(response)).message);
@@ -63,6 +67,43 @@ export function WalkActions({ walkId, actions, dogName }: WalkActionsProps) {
   }
 
   if (actions.length === 0) return null;
+
+  // Ending a walk asks for optional notes for the owner (story C6, scenario 2).
+  if (confirming === "complete") {
+    return (
+      <div
+        role="group"
+        aria-label={`End the walk for ${dogName}`}
+        className="flex flex-col gap-3 rounded-lg bg-surface-muted p-3"
+      >
+        <label htmlFor={`notes-${walkId}`} className="text-sm font-medium text-foreground">
+          Notes for the owner (optional)
+        </label>
+        <textarea
+          id={`notes-${walkId}`}
+          rows={3}
+          maxLength={1000}
+          value={sessionNotes}
+          onChange={(event) => setSessionNotes(event.target.value)}
+          placeholder="Did his business twice, drank water"
+          className={controlClasses}
+        />
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={() => run("complete")} disabled={pending}>
+            {pending ? "Working…" : "End walk"}
+          </Button>
+          <Button variant="secondary" onClick={() => setConfirming(null)} disabled={pending}>
+            Never mind
+          </Button>
+        </div>
+        {error ? (
+          <p role="alert" className="text-sm font-medium text-danger">
+            {error}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
 
   if (confirming) {
     return (
@@ -91,13 +132,14 @@ export function WalkActions({ walkId, actions, dogName }: WalkActionsProps) {
       <div className="flex flex-wrap gap-2">
         {actions.map((action) => {
           const needsConfirmation = action in QUESTIONS;
+          const asksFirst = needsConfirmation || action === "complete";
           return (
             <Button
               key={action}
               variant={needsConfirmation ? "danger" : "primary"}
               disabled={pending}
               aria-label={`${LABELS[action]} for ${dogName}`}
-              onClick={() => (needsConfirmation ? setConfirming(action) : run(action))}
+              onClick={() => (asksFirst ? setConfirming(action) : run(action))}
             >
               {LABELS[action]}
             </Button>

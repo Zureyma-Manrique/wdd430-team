@@ -8,3 +8,5 @@ tsconfig.tsbuildinfo
 prisma/migrations
 *.md
 tsconfig.json
+test-results
+playwright-report

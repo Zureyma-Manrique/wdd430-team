@@ -42,7 +42,7 @@ export async function POST(request: Request, { params }: RouteContext<"/api/walk
     case "FORBIDDEN":
       return apiError(403, "FORBIDDEN", "Your account can't do that to this walk");
     case "TOO_EARLY":
-      return apiError(409, "TOO_EARLY", "A walk can be started up to 15 minutes before its start time");
+      return apiError(409, "TOO_EARLY", "You can start this walk up to 15 minutes before its scheduled time");
     case "CONFLICT":
       return apiError(409, "INVALID_STATUS_CHANGE", "That change isn't possible for the walk's current status");
   }

@@ -1,8 +1,9 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { z } from "zod";
+import { GoogleButton } from "@/components/auth/google-button";
 import { Button } from "@/components/ui/button";
 import { TextField } from "@/components/ui/form-field";
 import { focusWithinRing } from "@/components/ui/styles";
@@ -26,7 +27,8 @@ function pickFieldErrors(fieldErrors: Record<string, string | undefined>): Field
  * Sign-up form (story A1). Validates with the shared Zod schema, creates the account through
  * `POST /api/auth/register`, then signs in and lands on `/dashboard`.
  */
-export function SignUpForm() {
+export function SignUpForm({ googleEnabled = false }: { googleEnabled?: boolean }) {
+  const formRef = useRef<HTMLFormElement>(null);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -92,7 +94,7 @@ export function SignUpForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
+    <form ref={formRef} onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
       {formError ? (
         <p role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-sm font-medium text-danger">
           {formError}
@@ -162,6 +164,14 @@ export function SignUpForm() {
       <Button type="submit" className="w-full" disabled={pending}>
         {pending ? "Creating account…" : "Create account"}
       </Button>
+      {googleEnabled ? (
+        <GoogleButton
+          getRole={() => {
+            const value = formRef.current ? new FormData(formRef.current).get("role") : null;
+            return typeof value === "string" && value ? value : null;
+          }}
+        />
+      ) : null}
     </form>
   );
 }

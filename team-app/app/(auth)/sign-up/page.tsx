@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SignUpForm } from "@/components/auth/sign-up-form";
 import { textLinkClasses } from "@/components/ui/styles";
+import { googleSignInEnabled } from "@/lib/auth/google";
 import { getSession } from "@/lib/auth/session";
 import { pageMetadata } from "@/lib/metadata";
 
@@ -12,7 +13,8 @@ export const metadata: Metadata = pageMetadata({
   path: "/sign-up",
 });
 
-export default async function SignUpPage() {
+export default async function SignUpPage({ searchParams }: PageProps<"/sign-up">) {
+  const { error } = await searchParams;
   if (await getSession()) {
     redirect("/dashboard");
   }
@@ -24,8 +26,15 @@ export default async function SignUpPage() {
         <p className="text-muted">Join as a dog owner or as a walker.</p>
       </header>
 
+      {error === "google-role" ? (
+        <p role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-sm font-medium text-danger">
+          We don&apos;t have an account for that Google address yet. Choose Owner or Walker below, then continue with
+          Google.
+        </p>
+      ) : null}
+
       <div className="rounded-xl border border-border bg-surface p-6 shadow-sm">
-        <SignUpForm />
+        <SignUpForm googleEnabled={googleSignInEnabled()} />
       </div>
 
       <p className="text-center text-sm text-muted">

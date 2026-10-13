@@ -169,6 +169,15 @@ export async function listWalks(actor: Actor, query: WalkListQuery): Promise<{ w
   return { walks: rows.map(toWalkSummary), total };
 }
 
+/** One of my walks (story C6), or `null`. Somebody else's walk is indistinguishable from a missing one (FR-004). */
+export async function getWalkForActor(actor: Actor, walkId: string): Promise<WalkSummary | null> {
+  const row = await db().walkBooking.findFirst({
+    where: { id: walkId, ...actorWhere(actor) },
+    include: summaryInclude,
+  });
+  return row ? toWalkSummary(row) : null;
+}
+
 /** Walks that still need attention, soonest first: requested, confirmed or under way, not yet past. */
 export async function getUpcomingWalks(actor: Actor, limit: number): Promise<WalkSummary[]> {
   const rows = await db().walkBooking.findMany({
