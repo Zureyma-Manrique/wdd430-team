@@ -34,7 +34,7 @@ app/                         Routes (App Router). Server Components by default.
   (auth)/sign-up/            Sign-up page with Owner/Walker role choice (story A1)
   dashboard/                 Protected role dashboard
   dogs/                      Owner's dogs: (list)/ page + loading, new/, [id]/ (edit, remove), error.tsx (stories B1, B2)
-  walks/                     My walks (owner: booked; walker: assigned) with loading and error states (stories C2 to C5)
+  walks/                     My walks (owner: booked; walker: assigned), filtered by status and dates in the URL, with loading and error states (stories C2 to C5)
   profile/                   Profile editor for walkers and owners (story A3)
   walkers/(directory)/       Walker directory + its loading.tsx (route group, see note below)
   walkers/[id]/              Public walker profile & booking
@@ -61,7 +61,7 @@ lib/
   validation/*.ts            Zod schemas shared by Route Handlers and client forms
   db.ts                      The Prisma client (server-only; created lazily, so `next build` needs no database)
   data/*.ts                  Server-only data access: typed Prisma queries; mappers.ts turns rows into domain types
-  walks/transitions.ts       The FR-023 status table (who may do what, from which status); dates.ts for time-zone filters
+  walks/transitions.ts       The FR-023 status table (who may do what, from which status) and canReschedule() (FR-024); dates.ts for time-zone filters
   auth/session.ts            getSession(): the only way to read the current user
   auth/auth.ts               Auth.js setup (handlers, auth, signIn, signOut); server-only
   auth/config.ts             Shared Auth.js config, safe for proxy.ts (no user store, no bcrypt)
