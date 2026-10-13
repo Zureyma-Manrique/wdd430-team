@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SignInForm } from "@/components/auth/sign-in-form";
 import { textLinkClasses } from "@/components/ui/styles";
+import { googleSignInEnabled } from "@/lib/auth/google";
 import { getSession } from "@/lib/auth/session";
 import { callbackUrlSchema } from "@/lib/validation";
 import { pageMetadata } from "@/lib/metadata";
@@ -14,7 +15,7 @@ export const metadata: Metadata = pageMetadata({
 });
 
 export default async function SignInPage({ searchParams }: PageProps<"/sign-in">) {
-  const { callbackUrl: rawCallbackUrl } = await searchParams;
+  const { callbackUrl: rawCallbackUrl, error } = await searchParams;
   // Only same-origin paths survive; anything else falls back to /dashboard (no open redirects).
   const callbackUrl = callbackUrlSchema.parse(rawCallbackUrl);
 
@@ -29,8 +30,14 @@ export default async function SignInPage({ searchParams }: PageProps<"/sign-in">
         <p className="text-muted">Sign in to manage your dogs and walks.</p>
       </header>
 
+      {error === "google" ? (
+        <p role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-sm font-medium text-danger">
+          Google sign-in didn&apos;t work. Try again, or use your email and password.
+        </p>
+      ) : null}
+
       <div className="rounded-xl border border-border bg-surface p-6 shadow-sm">
-        <SignInForm callbackUrl={callbackUrl} />
+        <SignInForm callbackUrl={callbackUrl} googleEnabled={googleSignInEnabled()} />
       </div>
 
       <p className="text-center text-sm text-muted">

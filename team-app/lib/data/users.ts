@@ -92,3 +92,36 @@ export async function createUser(input: NewUserAccount): Promise<CreateUserResul
     throw error;
   }
 }
+
+export type FindOrCreateOAuthUserResult =
+  { ok: true; user: UserAccount; created: boolean } | { ok: false; reason: "ROLE_REQUIRED" };
+
+/**
+ * Account for someone who signed in with Google (story A1). The caller has already checked that
+ * Google verified the email. An existing account with that email signs in; there is no second
+ * account, so a credentials user and their Google sign-in share one set of dogs and walks. A new
+ * email needs the role chosen on the sign-up page (FR-002). The new account gets a password hash
+ * nobody knows (`createLockedHash`), so it can only be reached through Google.
+ */
+export async function findOrCreateOAuthUser(input: {
+  email: string;
+  name: string;
+  role: UserRole | null;
+  createLockedHash: () => Promise<string>;
+}): Promise<FindOrCreateOAuthUserResult> {
+  const existing = await findUserByEmail(input.email);
+  if (existing) return { ok: true, user: existing, created: false };
+  if (!input.role) return { ok: false, reason: "ROLE_REQUIRED" };
+
+  const created = await createUser({
+    email: input.email,
+    name: input.name,
+    role: input.role,
+    passwordHash: await input.createLockedHash(),
+  });
+  if (created.ok) return { ok: true, user: created.user, created: true };
+
+  // Two first sign-ins raced and the other one won: use the account it made.
+  const winner = await findUserByEmail(input.email);
+  return winner ? { ok: true, user: winner, created: false } : { ok: false, reason: "ROLE_REQUIRED" };
+}

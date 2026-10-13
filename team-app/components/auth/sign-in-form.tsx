@@ -3,6 +3,7 @@
 import { signIn } from "next-auth/react";
 import { useState, type FormEvent } from "react";
 import { z } from "zod";
+import { GoogleButton } from "@/components/auth/google-button";
 import { Button } from "@/components/ui/button";
 import { TextField } from "@/components/ui/form-field";
 import { signInSchema } from "@/lib/validation/auth";
@@ -10,6 +11,8 @@ import { signInSchema } from "@/lib/validation/auth";
 interface SignInFormProps {
   /** Same-origin path to return to, already sanitized by the page with `callbackUrlSchema`. */
   callbackUrl: string;
+  /** Shows "Continue with Google" when Google sign-in is configured (story A1). */
+  googleEnabled?: boolean;
 }
 
 type FieldErrors = Partial<Record<"email" | "password", string>>;
@@ -19,7 +22,7 @@ type FieldErrors = Partial<Record<"email" | "password", string>>;
  * Any failure shows one generic message, so the form never reveals which field was wrong or
  * whether an account exists (scenario 2).
  */
-export function SignInForm({ callbackUrl }: SignInFormProps) {
+export function SignInForm({ callbackUrl, googleEnabled = false }: SignInFormProps) {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -89,6 +92,7 @@ export function SignInForm({ callbackUrl }: SignInFormProps) {
       <Button type="submit" className="w-full" disabled={pending}>
         {pending ? "Signing in…" : "Sign in"}
       </Button>
+      {googleEnabled ? <GoogleButton /> : null}
     </form>
   );
 }
