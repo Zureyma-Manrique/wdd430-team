@@ -26,6 +26,7 @@ Dog owners who work long days or travel have no easy way to find a walker they c
 | **Dogs (CRUD)** | Owners add, edit and remove dogs. Removing archives the dog, so past walks and reviews keep their record. |
 | Find a walker | Search by postal code, sort by rating or price, filter by minimum rating. Public walker pages show ratings and reviews. |
 | **Walks (booking)** | Owners request a walk for a dog; walkers accept, decline, start and complete it; either side can cancel. A walker can't be double-booked, which the database itself enforces. |
+| **My schedule** | Filter your walks by status and date range (the filters live in the URL, and a date covers every walk that starts on that day in your own time zone). Owners can reschedule a pending or confirmed walk that starts more than 2 hours away; it goes back to pending so the walker confirms again. |
 | **Reviews** | After a walk is completed, its owner rates it 1 to 5 stars with an optional comment (keyboard friendly). Each walk can be reviewed once. They can edit it for 30 days (it is then marked "Edited") and delete it at any time, and the walker can post one public reply, which a new reply replaces. The walker's average and review count update at once, and the profile lists reviews newest first, 10 at a time. |
 | Quality | Responsive from 360 px up, light and dark themes, WCAG AAA text contrast, loading / empty / error states, page metadata and a generated share image. |
 
@@ -169,6 +170,7 @@ Status codes: `200` OK · `201` created · `204` no content · `400` invalid inp
 | `PATCH` | `/api/reviews/[id]` | Owner (author) | `{ rating?, comment? }`, within 30 days of writing it (`409 REVIEW_LOCKED` after). Someone else's review is `404`. |
 | `DELETE` | `/api/reviews/[id]` | Owner (author) | `204`. Allowed at any time. |
 | `PUT` | `/api/reviews/[id]/reply` | Walker (reviewed) | `{ reply }`, 1 to 500 characters. Creates or replaces the walker's one reply. |
+| `PATCH` | `/api/walks/[id]` | Owner | Reschedule or edit notes: `{ startAt?, durationMinutes?, pickupNotes? }` (at least one). Only a `PENDING` or `CONFIRMED` walk that starts more than 2 hours from now; a new time or length resets it to `PENDING`. `409 WALK_LOCKED` otherwise, `409 WALKER_UNAVAILABLE` if the new slot overlaps. |
 | `POST` | `/api/walks/[id]/status` | Owner or walker | `{ action, reason?, sessionNotes? }`. See the table below. |
 
 Allowed status changes (anything else is `409`; the wrong role is `403`):
@@ -225,6 +227,7 @@ Strongest category: Accessibility, Best Practices and SEO are all 100. Weakest: 
 - **No automated tests or CI yet** (issue #34). Everything above was verified by hand.
 - **Sessions are JWTs, not database sessions.** Auth.js supports its Credentials provider only with JWT sessions. Accounts live in Postgres, and the account is re-read on every request, so a deleted account is signed out immediately.
 - **Reviews are managed from My walks only.** There is no `GET /api/reviews` list endpoint (the walker profile reads them directly), and a walker can replace but not delete a reply.
+- **The schedule is a list, not a calendar.** It filters by status and dates (story C4), but there is no calendar view and no filter by dog on the page (the API has one).
 - **Requests never expire on their own.** A pending request whose time has passed just moves to "Past".
 - **Deactivating a walker doesn't cancel their upcoming walks** (issue #35).
 - **No live walk-status page.** Walkers can start and complete a walk, but there is no polling status page for owners (story C6).
