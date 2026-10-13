@@ -21,10 +21,10 @@ Cite requirement IDs (for example `FR-023` or story `C2`) in comments where code
 | Styling | Tailwind CSS v4 utilities only. Tokens live in `app/globals.css` (`@theme inline`). |
 | Validation | Zod 4 (`z.email()`, `z.iso.datetime()`, `{ error: "..." }`, `z.flattenError`). |
 | Data | PostgreSQL 16 + Prisma 7 (`prisma/schema.prisma`, migrations in `prisma/migrations`). `lib/db.ts` is the one Prisma client, and only `lib/data/*` imports it. Demo data: `prisma/seed.ts`. |
-| Auth | Auth.js v5 (`next-auth@beta`) with a Credentials provider and bcrypt (`bcryptjs`) password hashes. JWT sessions (Auth.js supports the Credentials provider only with JWT) and accounts in Postgres (`lib/data/users.ts`); `getSession()` re-reads the account on every request. Google sign-in is still to do (FR-001, issue #32). |
-| Testing (planned) | Vitest + React Testing Library, Playwright E2E. Do not add Jest or Cypress. |
+| Auth | Auth.js v5 (`next-auth@beta`) with a Credentials provider and bcrypt (`bcryptjs`) password hashes. JWT sessions (Auth.js supports the Credentials provider only with JWT) and accounts in Postgres (`lib/data/users.ts`); `getSession()` re-reads the account on every request. Google sign-in (FR-001) is optional: it appears only when `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` are set (`lib/auth/google.ts`); a new Google account takes its role from a short-lived cookie set on the sign-up page. |
+| Testing | Vitest + React Testing Library for unit and component tests (`*.test.ts(x)` next to the code, `npm test`), Playwright for end-to-end tests (`e2e/`, `npm run test:e2e`). CI runs both (`.github/workflows/ci.yml`). Do not add Jest or Cypress. Tests must use literal values for the rules they check (for example 2 hours), not the constants from the code, or they can't fail. |
 
-Commands (run inside `team-app/`): `npm run dev`, `npm run build`, `npm run lint`, `npm run typecheck`, `npm run format:check`, and for the database `npm run db:migrate` (development), `db:deploy`, `db:seed`.
+Commands (run inside `team-app/`): `npm run dev`, `npm run build`, `npm run lint`, `npm run typecheck`, `npm run format:check`, `npm test`, `npm run test:e2e`, and for the database `npm run db:migrate` (development), `db:deploy`, `db:seed`.
 
 ## Directory layout
 
@@ -34,7 +34,8 @@ app/                         Routes (App Router). Server Components by default.
   (auth)/sign-up/            Sign-up page with Owner/Walker role choice (story A1)
   dashboard/                 Protected role dashboard
   dogs/                      Owner's dogs: (list)/ page + loading, new/, [id]/ (edit, remove), error.tsx (stories B1, B2)
-  walks/                     My walks (owner: booked; walker: assigned), filtered by status and dates in the URL, with loading and error states (stories C2 to C5)
+  walks/(list)/             My walks (owner: booked; walker: assigned), filtered by status and dates in the URL, with its loading.tsx (route group, so [id] keeps real 404s) (stories C2 to C5)
+  walks/[id]/               One walk, kept fresh by polling while it is confirmed or in progress (story C6)
   profile/                   Profile editor for walkers and owners (story A3)
   walkers/(directory)/       Walker directory + its loading.tsx (route group, see note below)
   walkers/[id]/              Public walker profile & booking
@@ -45,15 +46,15 @@ app/                         Routes (App Router). Server Components by default.
   api/owners/me/             GET/PATCH my owner profile (name, phone, postal code)
   api/dogs/ api/dogs/[id]/   Dog CRUD; DELETE archives (409 while the dog has an active walk)
   api/reviews/ api/reviews/[id]/ api/reviews/[id]/reply/   Create, edit, delete a review; the walker's reply (stories D1, D3, D4; FR-030 to FR-033)
-  api/walks/ api/walks/[id]/ api/walks/[id]/status/   Request, list, reschedule, and change the status of walks (FR-020 to FR-025)
+  api/walks/ api/walks/[id]/ api/walks/[id]/status/   Request, list, read, reschedule, and change the status of walks (FR-020 to FR-025)
 proxy.ts                     Redirects signed-out visitors on /dashboard, /dogs, /walks, /profile to /sign-in
 components/
   ui/                        Primitives: button.tsx, form-field.tsx, form-notice.tsx (client), styles.ts (focusRing, focusWithinRing, textLinkClasses)
   layout/                    header.tsx, footer.tsx, nav-links.tsx (client), nav-items.ts
   walkers/                   walker-card, rating-badge, filter-bar (client), booking-form (client)
   dogs/                      dog-profile-card, dog-form (client), archive-dog-button (client)
-  walks/                     walk-card, walk-status-badge, walk-actions (client), reschedule-form (client), walk-filters (client), review-form, review-actions, review-reply-form (client), local-date-time (client)
-  auth/                      sign-in-form, sign-up-form (client)
+  walks/                     walk-card, walk-status-badge, walk-actions (client), walk-status-poller (client), reschedule-form (client), walk-filters (client), review-form, review-actions, review-reply-form (client), local-date-time (client)
+  auth/                      sign-in-form, sign-up-form, google-button (client)
   profile/                   walker-profile-form, owner-profile-form (client)
 lib/
   reviews/edit-window.ts     The FR-032 30-day edit rule, shared by the API, data layer and pages
@@ -65,7 +66,8 @@ lib/
   auth/session.ts            getSession(): the only way to read the current user
   auth/auth.ts               Auth.js setup (handlers, auth, signIn, signOut); server-only
   auth/config.ts             Shared Auth.js config, safe for proxy.ts (no user store, no bcrypt)
-  auth/actions.ts            signOutAction Server Action
+  auth/actions.ts            signOutAction and googleSignInAction Server Actions
+  auth/google.ts             googleSignInEnabled(), the OAuth role cookie name (plain module)
   api/http.ts                apiError(), readJsonBody() (server-only)
   api/guards.ts              requireRole(), requireSignedIn(): the 401 then 403 checks every Route Handler starts with
   api/error-body.ts          readApiError(), firstFieldErrors(): client-safe reader for spec §6 error bodies

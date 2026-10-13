@@ -27,6 +27,9 @@ Dog owners who work long days or travel have no easy way to find a walker they c
 | Find a walker | Search by postal code, sort by rating or price, filter by minimum rating. Public walker pages show ratings and reviews. |
 | **Walks (booking)** | Owners request a walk for a dog; walkers accept, decline, start and complete it; either side can cancel. A walker can't be double-booked, which the database itself enforces. |
 | **My schedule** | Filter your walks by status and date range (the filters live in the URL, and a date covers every walk that starts on that day in your own time zone). Owners can reschedule a pending or confirmed walk that starts more than 2 hours away; it goes back to pending so the walker confirms again. |
+| **Live walk status** | Each walk has a page (`/walks/[id]`). While a walk is confirmed or in progress it checks for changes every 10 seconds, so an owner sees "In progress" and then "Completed" without reloading. The walker ends a walk with optional notes for the owner. |
+| **Pausing a profile** | A walker who switches off "Accepting new walks" has their pending and confirmed walks that haven't started cancelled (the owner sees why). A walk already under way is left alone. |
+| **Google sign-in** | "Continue with Google" on the sign-in and sign-up pages, shown once the Google keys are set (see below). A Google address that already has an account signs into it; a new one uses the Owner or Walker choice from the sign-up page. |
 | **Reviews** | After a walk is completed, its owner rates it 1 to 5 stars with an optional comment (keyboard friendly). Each walk can be reviewed once. They can edit it for 30 days (it is then marked "Edited") and delete it at any time, and the walker can post one public reply, which a new reply replaces. The walker's average and review count update at once, and the profile lists reviews newest first, 10 at a time. |
 | Quality | Responsive from 360 px up, light and dark themes, WCAG AAA text contrast, loading / empty / error states, page metadata and a generated share image. |
 
@@ -70,6 +73,7 @@ Edit `.env.local`:
 | --- | --- |
 | `DATABASE_URL` | Your Postgres connection string, e.g. `postgresql://postgres:postgres@localhost:5432/paws_and_paths` |
 | `AUTH_SECRET` | Run `npx auth secret`, or paste the output of `openssl rand -base64 32` |
+| `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | Optional. Turn on Google sign-in (see [Google sign-in](#google-sign-in)). |
 
 Then create the tables, load the demo data and start the app:
 
@@ -101,6 +105,8 @@ You can also create your own account at `/sign-up`. The other seeded people (Mia
 | `npm run dev` / `build` / `start` | Next.js development server, production build, production server |
 | `npm run lint` / `typecheck` | ESLint / `tsc --noEmit` |
 | `npm run format` / `format:check` | Prettier |
+| `npm test` / `npm run test:watch` | Unit and component tests (Vitest + React Testing Library) |
+| `npm run test:e2e` | End-to-end tests (Playwright). Needs a migrated and seeded database and a production build (`npm run build`); see [Testing](#testing) |
 | `npm run db:migrate` | Create and apply a migration from `schema.prisma` (development) |
 | `npm run db:deploy` | Apply existing migrations (production) |
 | `npm run db:seed` | Load the demo data (idempotent) |
@@ -170,6 +176,7 @@ Status codes: `200` OK · `201` created · `204` no content · `400` invalid inp
 | `PATCH` | `/api/reviews/[id]` | Owner (author) | `{ rating?, comment? }`, within 30 days of writing it (`409 REVIEW_LOCKED` after). Someone else's review is `404`. |
 | `DELETE` | `/api/reviews/[id]` | Owner (author) | `204`. Allowed at any time. |
 | `PUT` | `/api/reviews/[id]/reply` | Walker (reviewed) | `{ reply }`, 1 to 500 characters. Creates or replaces the walker's one reply. |
+| `GET` | `/api/walks/[id]` | Owner or walker | One of my walks, with its status and session notes. The walk page polls it. `404` if it isn't yours. |
 | `PATCH` | `/api/walks/[id]` | Owner | Reschedule or edit notes: `{ startAt?, durationMinutes?, pickupNotes? }` (at least one). Only a `PENDING` or `CONFIRMED` walk that starts more than 2 hours from now; a new time or length resets it to `PENDING`. `409 WALK_LOCKED` otherwise, `409 WALKER_UNAVAILABLE` if the new slot overlaps. |
 | `POST` | `/api/walks/[id]/status` | Owner or walker | `{ action, reason?, sessionNotes? }`. See the table below. |
 
@@ -221,16 +228,36 @@ Strongest category: Accessibility, Best Practices and SEO are all 100. Weakest: 
 
 **Manual testing:** each flow was exercised in a real browser against a real PostgreSQL database, including the database rules: three simultaneous sign-ups with one email produce one account, and five simultaneous bookings of one time slot produce one booking.
 
+## Testing
+
+```bash
+npm test                        # 40+ unit and component tests, no database needed
+npm run build && npm run test:e2e   # end-to-end, needs the migrated and seeded database
+```
+
+- **Unit and component tests** (Vitest, React Testing Library) cover the rules that are easy to get wrong: the walk status table (FR-023), the 2-hour reschedule rule (FR-024), the 30-day review edit window (FR-032), the booking window and strict request bodies, time-zone date filters across a daylight-saving change, the rating widget (keyboard and error paths), and the status badges.
+- **End-to-end tests** (Playwright, `e2e/`) run against a real PostgreSQL database: the walker directory, redirects and `401`s for signed-out visitors, real `404`s, an owner's dogs and walks, role checks, and the generic sign-in error. Set `PW_CHROMIUM_PATH` to use an installed Chromium; otherwise run `npx playwright install chromium` once.
+- **CI** (`.github/workflows/ci.yml`) runs on every pull request and on pushes to `main`: lint, types, formatting, unit tests and a build, then the end-to-end tests against a Postgres service container.
+
+## Google sign-in
+
+The "Continue with Google" button appears only when `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` are set, so the app works without them.
+
+1. In [Google Cloud Console](https://console.cloud.google.com/) open **APIs & Services → Credentials → Create credentials → OAuth client ID** (type **Web application**).
+2. Add these **Authorized redirect URIs**: `http://localhost:3000/api/auth/callback/google` and `https://YOUR-DOMAIN/api/auth/callback/google`.
+3. Put the client ID and secret in `.env.local` (and in Vercel → Settings → Environment Variables), then redeploy.
+
+How it behaves: Google must report the email as verified. An email that already has an account signs into that account. A new email creates an account with the role picked on the sign-up page (Owner or Walker); from the sign-in page, a new email is sent to sign-up to choose one. Accounts created this way have no usable password.
+
 ## Known issues and opportunities
 
-- **Google sign-in is not built** (the spec lists it; tracked in issue #32). Only email and password work.
-- **No automated tests or CI yet** (issue #34). Everything above was verified by hand.
+- **Google sign-in needs your own Google keys, and its last step is untested.** The button, the role cookie and the account matching were tested (the code reaches Google's sign-in URL), but the return from Google could not be run without real credentials. Try it once after adding the keys.
+- **Test coverage is a starting point.** There are unit tests for the main rules and a short end-to-end smoke suite, not a test for every flow.
 - **Sessions are JWTs, not database sessions.** Auth.js supports its Credentials provider only with JWT sessions. Accounts live in Postgres, and the account is re-read on every request, so a deleted account is signed out immediately.
 - **Reviews are managed from My walks only.** There is no `GET /api/reviews` list endpoint (the walker profile reads them directly), and a walker can replace but not delete a reply.
 - **The schedule is a list, not a calendar.** It filters by status and dates (story C4), but there is no calendar view and no filter by dog on the page (the API has one).
 - **Requests never expire on their own.** A pending request whose time has passed just moves to "Past".
-- **Deactivating a walker doesn't cancel their upcoming walks** (issue #35).
-- **No live walk-status page.** Walkers can start and complete a walk, but there is no polling status page for owners (story C6).
+- **Live status is polling.** The walk page checks every 10 seconds (the spec's design), not a push connection, and only while a walk is confirmed or in progress.
 - **No password reset, email verification or sign-in rate limiting.** Worth adding before real users.
 - **Photos are links, not uploads.** An upload service (for example Vercel Blob) would be a natural next step.
 - Opportunities: walker availability calendars, in-app messages between owner and walker, pagination on the walker search, and a dark-theme share image.
