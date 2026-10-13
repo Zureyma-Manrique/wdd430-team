@@ -2,9 +2,9 @@ import "server-only";
 import type { Prisma } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import type { SessionUser, WalkDurationMinutes, WalkStatusAction, WalkSummary } from "@/lib/types";
-import { checkTransition } from "@/lib/walks/transitions";
+import { canReschedule, checkTransition } from "@/lib/walks/transitions";
 import { startOfDayUtc, startOfNextDayUtc } from "@/lib/walks/dates";
-import type { WalkCreateInput, WalkListQuery, WalkStatusChangeInput } from "@/lib/validation";
+import type { WalkCreateInput, WalkListQuery, WalkStatusChangeInput, WalkUpdateInput } from "@/lib/validation";
 import { isOverlapViolation } from "./errors";
 
 /*
@@ -87,6 +87,50 @@ export async function createWalk(ownerId: string, input: WalkCreateInput): Promi
     if (isOverlapViolation(error)) return { ok: false, reason: "OVERLAP" };
     throw error;
   }
+}
+
+export type UpdateWalkResult =
+  { ok: true; walk: WalkSummary } | { ok: false; reason: "NOT_FOUND" | "CONFLICT" | "OVERLAP" };
+
+/**
+ * FR-024 (story C5): the owner changes the time, length or pickup notes of a walk that is still
+ * `PENDING` or `CONFIRMED` and starts more than 2 hours from now. A new time or length sends the
+ * walk back to `PENDING`, so the walker has to confirm again. The overlap constraint covers the
+ * new slot, and the update names the status it expects so it can't race a walker's accept.
+ */
+export async function updateWalk(
+  ownerId: string,
+  walkId: string,
+  input: WalkUpdateInput,
+  now: Date = new Date(),
+): Promise<UpdateWalkResult> {
+  const walk = await db().walkBooking.findFirst({ where: { id: walkId, ownerId } });
+  if (!walk) return { ok: false, reason: "NOT_FOUND" };
+  if (!canReschedule(walk, now)) return { ok: false, reason: "CONFLICT" };
+
+  const startAt = input.startAt ? new Date(input.startAt) : walk.startAt;
+  const durationMinutes = input.durationMinutes ?? walk.durationMinutes;
+  const timeChanged = startAt.getTime() !== walk.startAt.getTime() || durationMinutes !== walk.durationMinutes;
+
+  try {
+    const { count } = await db().walkBooking.updateMany({
+      where: { id: walk.id, ownerId, status: walk.status },
+      data: {
+        startAt,
+        endAt: new Date(startAt.getTime() + durationMinutes * 60_000),
+        durationMinutes,
+        ...(input.pickupNotes !== undefined ? { pickupNotes: input.pickupNotes } : {}),
+        ...(timeChanged ? { status: "PENDING" } : {}),
+      },
+    });
+    if (count === 0) return { ok: false, reason: "CONFLICT" };
+  } catch (error) {
+    if (isOverlapViolation(error)) return { ok: false, reason: "OVERLAP" };
+    throw error;
+  }
+
+  const updated = await db().walkBooking.findUniqueOrThrow({ where: { id: walk.id }, include: summaryInclude });
+  return { ok: true, walk: toWalkSummary(updated) };
 }
 
 /** FR-025: my walks, soonest first, with optional status, dog and date filters. */

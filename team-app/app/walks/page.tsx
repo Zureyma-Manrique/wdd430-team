@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { WalkCard } from "@/components/walks/walk-card";
+import { WalkFilters } from "@/components/walks/walk-filters";
 import { ButtonLink } from "@/components/ui/button";
 import { getSession } from "@/lib/auth/session";
-import { getPastWalks, getUpcomingWalks } from "@/lib/data/walks";
+import { getPastWalks, getUpcomingWalks, listWalks } from "@/lib/data/walks";
 import { pageMetadata } from "@/lib/metadata";
+import { walkListQuerySchema } from "@/lib/validation";
 
 export const metadata: Metadata = pageMetadata({
   title: "My walks",
@@ -14,15 +16,33 @@ export const metadata: Metadata = pageMetadata({
 });
 
 /** Stories C3 to C5: an owner's booked walks, or the walks assigned to a walker. */
-export default async function WalksPage() {
+export default async function WalksPage({ searchParams }: PageProps<"/walks">) {
   // Deny by default: `proxy.ts` also guards /walks, but pages never rely on it alone.
   const session = await getSession();
   if (!session) {
     redirect(`/sign-in?callbackUrl=${encodeURIComponent("/walks")}`);
   }
 
-  // Both lists are scoped to the session's own profile id, never an id from the URL (FR-004).
-  const [upcoming, past] = await Promise.all([getUpcomingWalks(session, 50), getPastWalks(session, 20)]);
+  // Filters come from the query string. Empty fields are dropped, and anything invalid falls back
+  // to "no filter" instead of an error page.
+  const rawFilters = Object.fromEntries(
+    Object.entries(await searchParams).flatMap(([key, value]) => {
+      const first = Array.isArray(value) ? value[0] : value;
+      return first ? [[key, first]] : [];
+    }),
+  );
+  const parsedFilters = walkListQuerySchema
+    .pick({ status: true, from: true, to: true, tz: true })
+    .safeParse(rawFilters);
+  const filters = parsedFilters.success ? parsedFilters.data : null;
+  const filtersActive = Boolean(filters && (filters.status || filters.from || filters.to));
+
+  // Every list is scoped to the session's own profile id, never an id from the URL (FR-004).
+  const [upcoming, past, filtered] = await Promise.all([
+    filtersActive ? [] : getUpcomingWalks(session, 50),
+    filtersActive ? [] : getPastWalks(session, 20),
+    filters && filtersActive ? listWalks(session, { ...filters, page: 1, pageSize: 50 }) : null,
+  ]);
   const now = new Date();
   const isOwner = session.role === "OWNER";
 
@@ -36,51 +56,79 @@ export default async function WalksPage() {
         {isOwner ? <ButtonLink href="/walkers">Book a walk</ButtonLink> : null}
       </header>
 
-      <section aria-labelledby="upcoming-heading" className="flex flex-col gap-4">
-        <h2 id="upcoming-heading" className="text-xl font-semibold text-foreground">
-          Upcoming
-        </h2>
-        {upcoming.length > 0 ? (
-          <ul className="grid gap-4 md:grid-cols-2">
-            {upcoming.map((walk) => (
-              <li key={walk.id}>
-                <WalkCard walk={walk} viewerRole={session.role} now={now} />
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div className="rounded-xl border border-dashed border-border bg-surface px-6 py-10 text-center">
-            <p className="font-semibold text-foreground">No upcoming walks</p>
-            <p className="mt-1 text-sm text-muted">
-              {isOwner
-                ? "Find a walker near you and request a time."
-                : "New requests from owners will show up here for you to accept or decline."}
-            </p>
-            {isOwner ? (
-              <ButtonLink href="/walkers" className="mt-4">
-                Find a walker
-              </ButtonLink>
-            ) : null}
-          </div>
-        )}
-      </section>
+      <WalkFilters
+        status={filters?.status?.[0] ?? ""}
+        from={filters?.from ?? ""}
+        to={filters?.to ?? ""}
+        active={filtersActive}
+      />
 
-      <section aria-labelledby="past-heading" className="flex flex-col gap-4">
-        <h2 id="past-heading" className="text-xl font-semibold text-foreground">
-          Past
-        </h2>
-        {past.length > 0 ? (
-          <ul className="grid gap-4 md:grid-cols-2">
-            {past.map((walk) => (
-              <li key={walk.id}>
-                <WalkCard walk={walk} viewerRole={session.role} now={now} />
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-sm text-muted">Finished, declined and cancelled walks will appear here.</p>
-        )}
-      </section>
+      {filtered ? (
+        <section aria-labelledby="results-heading" className="flex flex-col gap-4">
+          <h2 id="results-heading" className="text-xl font-semibold text-foreground">
+            Matching walks ({filtered.total})
+          </h2>
+          {filtered.walks.length > 0 ? (
+            <ul className="grid gap-4 md:grid-cols-2">
+              {filtered.walks.map((walk) => (
+                <li key={walk.id}>
+                  <WalkCard walk={walk} viewerRole={session.role} now={now} />
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted">No walks match these filters. Try a wider date range.</p>
+          )}
+        </section>
+      ) : (
+        <>
+          <section aria-labelledby="upcoming-heading" className="flex flex-col gap-4">
+            <h2 id="upcoming-heading" className="text-xl font-semibold text-foreground">
+              Upcoming
+            </h2>
+            {upcoming.length > 0 ? (
+              <ul className="grid gap-4 md:grid-cols-2">
+                {upcoming.map((walk) => (
+                  <li key={walk.id}>
+                    <WalkCard walk={walk} viewerRole={session.role} now={now} />
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="rounded-xl border border-dashed border-border bg-surface px-6 py-10 text-center">
+                <p className="font-semibold text-foreground">No upcoming walks</p>
+                <p className="mt-1 text-sm text-muted">
+                  {isOwner
+                    ? "Find a walker near you and request a time."
+                    : "New requests from owners will show up here for you to accept or decline."}
+                </p>
+                {isOwner ? (
+                  <ButtonLink href="/walkers" className="mt-4">
+                    Find a walker
+                  </ButtonLink>
+                ) : null}
+              </div>
+            )}
+          </section>
+
+          <section aria-labelledby="past-heading" className="flex flex-col gap-4">
+            <h2 id="past-heading" className="text-xl font-semibold text-foreground">
+              Past
+            </h2>
+            {past.length > 0 ? (
+              <ul className="grid gap-4 md:grid-cols-2">
+                {past.map((walk) => (
+                  <li key={walk.id}>
+                    <WalkCard walk={walk} viewerRole={session.role} now={now} />
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted">Finished, declined and cancelled walks will appear here.</p>
+            )}
+          </section>
+        </>
+      )}
     </div>
   );
 }

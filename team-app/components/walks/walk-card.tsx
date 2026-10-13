@@ -1,7 +1,8 @@
 import { formatDuration } from "@/lib/format";
 import type { UserRole, WalkSummary } from "@/lib/types";
-import { availableActions } from "@/lib/walks/transitions";
+import { availableActions, canReschedule } from "@/lib/walks/transitions";
 import { LocalDateTime } from "./local-date-time";
+import { RescheduleForm } from "./reschedule-form";
 import { WalkActions } from "./walk-actions";
 import { WalkStatusBadge } from "./walk-status-badge";
 
@@ -44,6 +45,9 @@ export function WalkCard({ walk, viewerRole, now }: WalkCardProps) {
       {walk.cancellation?.reason ? <p className="text-sm text-muted">Reason: {walk.cancellation.reason}</p> : null}
 
       <WalkActions walkId={walk.id} actions={actions} dogName={walk.dogName} />
+      {viewerRole === "OWNER" && canReschedule(walk, now) ? (
+        <RescheduleForm walkId={walk.id} dogName={walk.dogName} />
+      ) : null}
     </article>
   );
 }
