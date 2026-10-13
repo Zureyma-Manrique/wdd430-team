@@ -45,7 +45,8 @@ export const walkUpdateSchema = z
     durationMinutes: durationMinutesSchema,
     pickupNotes: clearableText(500),
   })
-  .partial();
+  .partial()
+  .refine((value) => Object.keys(value).length > 0, { error: "Send at least one field to change" });
 export type WalkUpdateInput = z.infer<typeof walkUpdateSchema>;
 
 // POST /api/walks/[id]/status (FR-023)

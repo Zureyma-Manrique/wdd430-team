@@ -57,3 +57,14 @@ const ACTION_ORDER: readonly WalkStatusAction[] = ["accept", "decline", "start",
 export function availableActions(walk: WalkTiming, role: UserRole, now: Date): WalkStatusAction[] {
   return ACTION_ORDER.filter((action) => checkTransition(action, walk, role, now).ok);
 }
+
+/** FR-024: a walk can be rescheduled only while it starts more than 2 hours from now. */
+export const RESCHEDULE_MIN_LEAD_MS = 2 * 60 * 60 * 1000;
+
+/** Whether the walk can still be rescheduled (story C5). Only its owner may do it; callers check the role. */
+export function canReschedule(walk: WalkTiming, now: Date): boolean {
+  return (
+    (walk.status === "PENDING" || walk.status === "CONFIRMED") &&
+    new Date(walk.startAt).getTime() - now.getTime() > RESCHEDULE_MIN_LEAD_MS
+  );
+}

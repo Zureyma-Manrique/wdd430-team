@@ -34,7 +34,7 @@ app/                         Routes (App Router). Server Components by default.
   (auth)/sign-up/            Sign-up page with Owner/Walker role choice (story A1)
   dashboard/                 Protected role dashboard
   dogs/                      Owner's dogs: (list)/ page + loading, new/, [id]/ (edit, remove), error.tsx (stories B1, B2)
-  walks/                     My walks (owner: booked; walker: assigned) with loading and error states (stories C2 to C5)
+  walks/                     My walks (owner: booked; walker: assigned), filtered by status and dates in the URL, with loading and error states (stories C2 to C5)
   profile/                   Profile editor for walkers and owners (story A3)
   walkers/(directory)/       Walker directory + its loading.tsx (route group, see note below)
   walkers/[id]/              Public walker profile & booking
@@ -44,14 +44,14 @@ app/                         Routes (App Router). Server Components by default.
   api/walkers/me/            GET/PATCH my walker profile; api/walkers/[id]/ is the public profile
   api/owners/me/             GET/PATCH my owner profile (name, phone, postal code)
   api/dogs/ api/dogs/[id]/   Dog CRUD; DELETE archives (409 while the dog has an active walk)
-  api/walks/ api/walks/[id]/status/   Request, list, and change the status of walks (FR-020 to FR-025)
+  api/walks/ api/walks/[id]/ api/walks/[id]/status/   Request, list, reschedule, and change the status of walks (FR-020 to FR-025)
 proxy.ts                     Redirects signed-out visitors on /dashboard, /dogs, /walks, /profile to /sign-in
 components/
   ui/                        Primitives: button.tsx, form-field.tsx, form-notice.tsx (client), styles.ts (focusRing, focusWithinRing, textLinkClasses)
   layout/                    header.tsx, footer.tsx, nav-links.tsx (client), nav-items.ts
   walkers/                   walker-card, rating-badge, filter-bar (client), booking-form (client)
   dogs/                      dog-profile-card, dog-form (client), archive-dog-button (client)
-  walks/                     walk-card, walk-status-badge, walk-actions (client), local-date-time (client)
+  walks/                     walk-card, walk-status-badge, walk-actions (client), reschedule-form (client), walk-filters (client), local-date-time (client)
   auth/                      sign-in-form, sign-up-form (client)
   profile/                   walker-profile-form, owner-profile-form (client)
 lib/
@@ -59,7 +59,7 @@ lib/
   validation/*.ts            Zod schemas shared by Route Handlers and client forms
   db.ts                      The Prisma client (server-only; created lazily, so `next build` needs no database)
   data/*.ts                  Server-only data access: typed Prisma queries; mappers.ts turns rows into domain types
-  walks/transitions.ts       The FR-023 status table (who may do what, from which status); dates.ts for time-zone filters
+  walks/transitions.ts       The FR-023 status table (who may do what, from which status) and canReschedule() (FR-024); dates.ts for time-zone filters
   auth/session.ts            getSession(): the only way to read the current user
   auth/auth.ts               Auth.js setup (handlers, auth, signIn, signOut); server-only
   auth/config.ts             Shared Auth.js config, safe for proxy.ts (no user store, no bcrypt)
