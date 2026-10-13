@@ -122,6 +122,8 @@ export interface WalkSummary extends WalkBooking {
   dogName: string;
   walkerName: string;
   ownerName: string;
+  /** The owner's review of this walk (story D1), or `null` if there isn't one. */
+  review: { id: string; rating: number; comment: string | null } | null;
 }
 
 export interface WalkerReview {

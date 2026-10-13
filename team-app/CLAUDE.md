@@ -44,6 +44,7 @@ app/                         Routes (App Router). Server Components by default.
   api/walkers/me/            GET/PATCH my walker profile; api/walkers/[id]/ is the public profile
   api/owners/me/             GET/PATCH my owner profile (name, phone, postal code)
   api/dogs/ api/dogs/[id]/   Dog CRUD; DELETE archives (409 while the dog has an active walk)
+  api/reviews/               POST a review of a completed walk (story D1, FR-030)
   api/walks/ api/walks/[id]/status/   Request, list, and change the status of walks (FR-020 to FR-025)
 proxy.ts                     Redirects signed-out visitors on /dashboard, /dogs, /walks, /profile to /sign-in
 components/
@@ -51,7 +52,7 @@ components/
   layout/                    header.tsx, footer.tsx, nav-links.tsx (client), nav-items.ts
   walkers/                   walker-card, rating-badge, filter-bar (client), booking-form (client)
   dogs/                      dog-profile-card, dog-form (client), archive-dog-button (client)
-  walks/                     walk-card, walk-status-badge, walk-actions (client), local-date-time (client)
+  walks/                     walk-card, walk-status-badge, walk-actions (client), review-form (client), local-date-time (client)
   auth/                      sign-in-form, sign-up-form (client)
   profile/                   walker-profile-form, owner-profile-form (client)
 lib/

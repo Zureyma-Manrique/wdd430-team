@@ -2,6 +2,7 @@ import { formatDuration } from "@/lib/format";
 import type { UserRole, WalkSummary } from "@/lib/types";
 import { availableActions } from "@/lib/walks/transitions";
 import { LocalDateTime } from "./local-date-time";
+import { ReviewForm } from "./review-form";
 import { WalkActions } from "./walk-actions";
 import { WalkStatusBadge } from "./walk-status-badge";
 
@@ -40,6 +41,15 @@ export function WalkCard({ walk, viewerRole, now }: WalkCardProps) {
         <p className="rounded-lg bg-surface-muted px-3 py-2 text-sm text-foreground">
           <span className="font-medium">Pickup notes:</span> {walk.pickupNotes}
         </p>
+      ) : null}
+      {walk.review ? (
+        <p className="rounded-lg bg-accent-soft px-3 py-2 text-sm text-accent">
+          <span aria-hidden="true">{"★".repeat(walk.review.rating)}</span>
+          <span className="sr-only">Review: {walk.review.rating} out of 5 stars.</span>
+          {walk.review.comment ? <span className="ml-2 text-foreground">{walk.review.comment}</span> : null}
+        </p>
+      ) : viewerRole === "OWNER" && walk.status === "COMPLETED" ? (
+        <ReviewForm walkId={walk.id} walkerName={walk.walkerName} />
       ) : null}
       {walk.cancellation?.reason ? <p className="text-sm text-muted">Reason: {walk.cancellation.reason}</p> : null}
 
