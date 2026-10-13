@@ -2,6 +2,7 @@ import { formatDuration } from "@/lib/format";
 import type { UserRole, WalkSummary } from "@/lib/types";
 import { availableActions, canReschedule } from "@/lib/walks/transitions";
 import { LocalDateTime } from "./local-date-time";
+import { RescheduleForm } from "./reschedule-form";
 import { isWithinEditWindow } from "@/lib/reviews/edit-window";
 import { ReviewActions } from "./review-actions";
 import { ReviewForm } from "./review-form";
