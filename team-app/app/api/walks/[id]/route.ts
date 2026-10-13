@@ -1,8 +1,27 @@
 import { z } from "zod";
-import { requireRole } from "@/lib/api/guards";
+import { requireRole, requireSignedIn } from "@/lib/api/guards";
 import { apiError, readJsonBody } from "@/lib/api/http";
-import { updateWalk } from "@/lib/data/walks";
+import { getWalkForActor, updateWalk } from "@/lib/data/walks";
 import { idParamsSchema, walkUpdateSchema } from "@/lib/validation";
+
+/**
+ * GET /api/walks/[id]: one of my walks, with its status and session notes (story C6, FR-026). The
+ * walk detail page polls this while a walk is `CONFIRMED` or `IN_PROGRESS`.
+ *
+ * Guard order: authentication → params → ownership (`404`: not your walk, or no such walk).
+ */
+export async function GET(_request: Request, { params }: RouteContext<"/api/walks/[id]">): Promise<Response> {
+  const auth = await requireSignedIn("Sign in to see your walk");
+  if (!auth.ok) {
+    return auth.response;
+  }
+  const parsedParams = idParamsSchema.safeParse(await params);
+  if (!parsedParams.success) {
+    return apiError(404, "NOT_FOUND", "Walk not found");
+  }
+  const walk = await getWalkForActor(auth.session, parsedParams.data.id);
+  return walk ? Response.json({ walk }) : apiError(404, "NOT_FOUND", "Walk not found");
+}
 
 /**
  * PATCH /api/walks/[id]: reschedule a walk or edit its pickup notes (story C5, FR-024).
