@@ -222,6 +222,8 @@ team-app/
 | Sign in | 96 | 100 | 100 | 100 |
 | Sign up | 96 | 100 | 100 | 100 |
 
+**On the live site** (PageSpeed Insights, mobile, 13 Oct 2026): the Home page at https://wdd430-team.vercel.app scored **100 for Performance, Accessibility, Best Practices and SEO**.
+
 Strongest category: Accessibility, Best Practices and SEO are all 100. Weakest: Performance (95 to 99). First paint is under 0.8 seconds; the largest contentful paint (a block of text) lands at about 2 to 3 seconds under Lighthouse's simulated slow 4G. Pages that need a sign-in are intentionally `noindex`, so a Lighthouse run while signed in shows 66 for SEO there; signed out they redirect to sign-in, which scores 100.
 
 **Color contrast:** every text color pair is at least 7:1 (WCAG AAA) in both the light and dark themes. An axe-core run (WCAG 2 A, AA, AAA and best-practice rules) over all 14 page states in both themes found no violations.
