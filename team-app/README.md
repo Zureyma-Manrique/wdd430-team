@@ -251,7 +251,7 @@ How it behaves: Google must report the email as verified. An email that already 
 
 ## Known issues and opportunities
 
-- **Google sign-in needs your own Google keys, and its last step is untested.** The button, the role cookie and the account matching were tested (the code reaches Google's sign-in URL), but the return from Google could not be run without real credentials. Try it once after adding the keys.
+- **Google sign-in needs your own Google keys.** It is switched on in the live app and works end to end (tested by hand on the live site). A fresh clone shows no Google button until `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` are set. While the Google consent screen is in Testing mode, only the test users listed in Google Cloud can sign in.
 - **Test coverage is a starting point.** There are unit tests for the main rules and a short end-to-end smoke suite, not a test for every flow.
 - **Sessions are JWTs, not database sessions.** Auth.js supports its Credentials provider only with JWT sessions. Accounts live in Postgres, and the account is re-read on every request, so a deleted account is signed out immediately.
 - **Reviews are managed from My walks only.** There is no `GET /api/reviews` list endpoint (the walker profile reads them directly), and a walker can replace but not delete a reply.
