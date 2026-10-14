@@ -2,7 +2,7 @@
 
 **Trusted local dog walkers.** Paws & Paths connects dog owners with dog walkers in their area. Owners keep a profile for each dog, find a walker by postal code, rating and price, and request a walk. Walkers build a public profile, accept or decline requests, and run the walk. Ratings and reviews on a walker's page belong to completed walks.
 
-- **Live app:** _add the Vercel URL here after deploying (see [Deploying](#deploying))_
+- **Live app:** https://wdd430-team.vercel.app (demo accounts are listed under [Demo accounts](#demo-accounts))
 - **Repository:** https://github.com/Zureyma-Manrique/wdd430-team
 - **Course:** BYU–Pathway WDD 430, Web Full-Stack Development (team project)
 
